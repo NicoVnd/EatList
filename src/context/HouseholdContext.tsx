@@ -179,19 +179,13 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
     if (!user) return { success: false, error: 'Non authentifié' }
     try {
       const cleanId = householdId.trim()
-
-      // Vérifier si le foyer existe
-      const { data: hh, error: findErr } = await supabase
-        .from('households')
-        .select('*')
-        .eq('id', cleanId)
-        .single()
-
-      if (findErr || !hh) {
-        return { success: false, error: 'Foyer introuvable. Vérifiez l’identifiant.' }
+      if (!cleanId) {
+        return { success: false, error: 'Veuillez saisir un identifiant de foyer.' }
       }
 
-      // Rejoindre le foyer
+      // 1. Rejoindre le foyer d'abord
+      // En insérant dans household_members, PostgreSQL valide la clé étrangère (existence du foyer).
+      // Dès que l'utilisateur est membre, la RLS l'autorise à lire public.households !
       const { error: joinErr } = await supabase
         .from('household_members')
         .insert({
@@ -200,14 +194,34 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
         })
 
       if (joinErr) {
+        // Code 23505 = contrainte d'unicité (déjà membre)
         if (joinErr.code === '23505') {
           return { success: false, error: 'Vous êtes déjà membre de ce foyer !' }
         }
-        return { success: false, error: joinErr.message }
+        // Code 23503 = clé étrangère invalide (foyer inexistant)
+        if (joinErr.code === '23503' || joinErr.message?.includes('foreign key')) {
+          return { success: false, error: 'Foyer introuvable. Vérifiez l’identifiant.' }
+        }
+        // Erreur format UUID invalide
+        if (joinErr.code === '22P02') {
+          return { success: false, error: 'Format d’identifiant invalide.' }
+        }
+        return { success: false, error: joinErr.message || 'Impossible de rejoindre le foyer.' }
+      }
+
+      // 2. Maintenant que l'utilisateur est membre, la politique RLS l'autorise à lire le foyer
+      const { data: hh, error: findErr } = await supabase
+        .from('households')
+        .select('*')
+        .eq('id', cleanId)
+        .single()
+
+      if (findErr || !hh) {
+        return { success: false, error: 'Erreur lors du chargement des informations du foyer.' }
       }
 
       await fetchHouseholds()
-      setHousehold(hh)
+      setHousehold(hh as Household)
       return { success: true }
     } catch (err: any) {
       return { success: false, error: err.message || 'Erreur inattendue' }
