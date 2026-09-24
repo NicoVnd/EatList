@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="foyerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#007AFF" />
+      <stop offset="100%" stop-color="#5856D6" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- iOS squircle background -->
+  <rect width="512" height="512" rx="115" fill="url(#foyerGrad)" />
+
+  <!-- Stylized Household / Meals / Shopping Icon -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" filter="url(#shadow)">
+    <!-- Roof -->
+    <path d="M120 250 L256 140 L392 250" />
+    <path d="M336 170 V130 H368 V195" />
+
+    <!-- House walls -->
+    <path d="M150 240 V390 C150 406 164 420 180 420 H332 C348 420 362 406 362 390 V240" />
+
+    <!-- Shopping bag & Heart inside -->
+    <path d="M200 310 H312 L300 400 H212 Z" fill="#FFFFFF" fill-opacity="0.2" stroke-width="20" />
+    <path d="M226 310 V285 C226 270 238 258 256 258 C274 258 286 270 286 285 V310" stroke-width="20" />
+    
+    <!-- Heart / spark in center -->
+    <circle cx="256" cy="355" r="14" fill="#FFFFFF" stroke="none" />
+  </g>
+</svg>

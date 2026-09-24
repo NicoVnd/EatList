@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+  --bg-system: #F2F2F7;
+  --bg-card: #FFFFFF;
+  --separator: #E5E5EA;
+  --label-primary: #1C1C1E;
+  --label-secondary: #8E8E93;
+  --label-tertiary: #C7C7CC;
+  --tint-blue: #007AFF;
+  --tint-emerald: #34C759;
+  --tint-orange: #FF9500;
+  --tint-purple: #AF52DE;
+}
+
+html, body {
+  background-color: var(--bg-system);
+  color: var(--label-primary);
+  font-family: var(--font-system);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  overscroll-behavior-y: none;
+}
+
+/* Safe areas for iPhone notch & home indicator */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
+}
+
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top, 16px), 16px);
+}
+
+/* Tab bar height offset */
+.tabbar-offset {
+  padding-bottom: calc(64px + max(env(safe-area-inset-bottom, 16px), 16px));
+}
+
+/* iOS active tap feedback */
+button:active:not(:disabled), .ios-press:active {
+  transform: scale(0.97);
+  opacity: 0.85;
+}
+
+/* iOS grouped table separator */
+.ios-separator {
+  border-color: #E5E5EA;
+}
+
+/* Hide scrollbars cleanly */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
