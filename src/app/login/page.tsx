@@ -81,16 +81,13 @@ export default function LoginPage() {
       <div className="max-w-sm w-full mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="w-18 h-18 mx-auto rounded-3xl overflow-hidden shadow-sm border border-[#E7E5E4]">
+          <div className="w-24 h-24 mx-auto flex items-center justify-center">
             <img
-              src="/icon.png"
+              src="/Logo.png"
               alt="EatList"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-[#1C1917] pt-1">
-            EatList
-          </h1>
           <p className="text-sm text-[#78716C]">
             Repas, courses, recettes & budget partagés
           </p>

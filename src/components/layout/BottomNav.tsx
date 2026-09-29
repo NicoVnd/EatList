@@ -49,7 +49,7 @@ export function BottomNav({
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-[#E7E5E4] pb-safe">
-      <div className="max-w-md w-full mx-auto h-[64px] grid grid-cols-4 items-center">
+      <div className="max-w-md w-full mx-auto h-[54px] grid grid-cols-4 items-center">
         {navItems.map((item) => {
           const isActive = currentTab === item.id
           const Icon = item.icon
@@ -58,7 +58,7 @@ export function BottomNav({
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
-              className={`h-full flex flex-col items-center justify-center py-1 transition-colors select-none group focus:outline-none ${
+              className={`h-full flex flex-col items-center justify-center transition-colors select-none group focus:outline-none ${
                 isActive
                   ? 'text-[#F97316]'
                   : 'text-[#A8A29E] hover:text-[#1C1917]'

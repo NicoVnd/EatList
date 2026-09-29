@@ -169,34 +169,6 @@ export function BudgetView() {
     return totals
   }, [members, monthlyExpenses])
 
-  // Calcul du règlement / équilibre
-  const settlementInfo = useMemo(() => {
-    if (members.length !== 2 || monthlyTotal === 0) return null
-    const [m1, m2] = members
-    const t1 = monthlyMemberTotals[m1.user_id] || 0
-    const t2 = monthlyMemberTotals[m2.user_id] || 0
-    const idealPerPerson = monthlyTotal / 2
-    const diff = Math.abs(t1 - idealPerPerson)
-
-    if (diff < 0.5) {
-      return {
-        balanced: true,
-        message: 'Les dépenses sont parfaitement équilibrées (50 / 50)',
-      }
-    }
-
-    const debtor = t1 < t2 ? m1 : m2
-    const creditor = t1 < t2 ? m2 : m1
-    return {
-      balanced: false,
-      debtorName: debtor.user?.name || 'Membre',
-      creditorName: creditor.user?.name || 'Membre',
-      amount: diff,
-      message: `${debtor.user?.name || 'Membre'} doit ${formatEuro(diff)} à ${
-        creditor.user?.name || 'Membre'
-      }`,
-    }
-  }, [members, monthlyTotal, monthlyMemberTotals])
 
   // Top enseignes du mois
   const monthlyTopStores = useMemo(() => {
@@ -462,34 +434,15 @@ export function BudgetView() {
             </div>
           </div>
 
-          {/* ÉQUILIBRE DU FOYER & RÈGLEMENT */}
+          {/* RÉPARTITION DES DÉPENSES DU FOYER */}
           {members.length > 1 && (
             <div className="bg-white rounded-2xl p-5 border border-[#E7E5E4] space-y-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#A8A29E]">
                   <Scale className="w-3.5 h-3.5 text-[#F97316]" />
-                  <span>Équilibre du foyer</span>
+                  <span>Répartition des dépenses</span>
                 </div>
-                {settlementInfo?.balanced && (
-                  <span className="text-[10px] font-bold text-[#22C55E] bg-[#22C55E]/10 px-2 py-0.5 rounded-full">
-                    50 / 50
-                  </span>
-                )}
               </div>
-
-              {/* Callout de règlement */}
-              {settlementInfo && (
-                <div
-                  className={`p-3 rounded-2xl flex items-center gap-2.5 text-xs font-semibold border ${
-                    settlementInfo.balanced
-                      ? 'bg-[#22C55E]/10 border-[#22C55E]/20 text-[#22C55E]'
-                      : 'bg-[#F97316]/10 border-[#F97316]/20 text-[#F97316]'
-                  }`}
-                >
-                  <Sparkles className="w-4 h-4 shrink-0" />
-                  <span>{settlementInfo.message}</span>
-                </div>
-              )}
 
               {/* Barres de répartition individuelles */}
               <div className="space-y-3 pt-1">
