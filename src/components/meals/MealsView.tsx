@@ -22,6 +22,7 @@ import {
   X,
   Edit2,
   ArrowRight,
+  ShoppingBag,
 } from 'lucide-react'
 import { RecipesView } from '@/components/recipes/RecipesView'
 
@@ -97,6 +98,22 @@ export function MealsView() {
   const showToast = (msg: string) => {
     setToastMessage(msg)
     setTimeout(() => setToastMessage(null), 2500)
+  }
+
+  const addMealToShopping = async (mealTitle: string) => {
+    if (!household || !user || !mealTitle.trim()) return
+    try {
+      await supabase.from('shopping_items').insert({
+        household_id: household.id,
+        name: mealTitle.trim(),
+        quantity: null,
+        checked: false,
+        added_by: user.id,
+      })
+      showToast(`« ${mealTitle} » ajouté aux courses !`)
+    } catch (err) {
+      console.error('Erreur ajout repas aux courses:', err)
+    }
   }
 
   // Calcul des 7 jours de la semaine affichée
@@ -349,19 +366,19 @@ export function MealsView() {
     <div className="space-y-4 tabbar-offset">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-[#1C1C1E] text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top duration-200">
-          <Check className="w-4 h-4 text-[#34C759] stroke-[3]" />
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-[#1C1917] text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top duration-200">
+          <Check className="w-4 h-4 text-[#22C55E] stroke-[3]" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* iOS Large Title Header */}
+      {/* Header */}
       <div className="pt-1 pb-1 flex items-baseline justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#1C1C1E]">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1C1917]">
             Menus
           </h1>
-          <p className="text-xs text-[#8E8E93] font-medium mt-0.5">
+          <p className="text-sm text-[#78716C] mt-0.5">
             Planning des repas & idées du foyer
           </p>
         </div>
@@ -370,21 +387,21 @@ export function MealsView() {
         {!isCurrentWeek && subTab === 'week' && (
           <button
             onClick={goToCurrentWeek}
-            className="text-xs font-semibold text-[#007AFF] bg-white border border-[#E5E5EA] px-2.5 py-1 rounded-full shadow-2xs active:bg-[#F2F2F7] transition"
+            className="text-xs font-semibold text-[#F97316] bg-white border border-[#E7E5E4] px-2.5 py-1 rounded-full active:bg-[#FFFDF9] transition"
           >
             Aujourd&apos;hui
           </button>
         )}
       </div>
 
-      {/* Segmented Control iOS : Semaine vs Recettes vs Idées */}
-      <div className="grid grid-cols-3 p-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xs">
+      {/* Segmented Control : Semaine vs Recettes vs Idées */}
+      <div className="grid grid-cols-3 p-1 bg-[#F5F5F4] border border-[#E7E5E4] rounded-2xl">
         <button
           onClick={() => setSubTab('week')}
           className={`py-2 text-xs font-semibold rounded-xl flex items-center justify-center gap-1 transition select-none ${
             subTab === 'week'
-              ? 'bg-[#007AFF] text-white shadow-xs'
-              : 'text-[#8E8E93] hover:text-[#1C1C1E]'
+              ? 'bg-white text-[#1C1917] shadow-sm'
+              : 'text-[#78716C] hover:text-[#1C1917]'
           }`}
         >
           <CalendarDays className="w-4 h-4 shrink-0" />
@@ -394,8 +411,8 @@ export function MealsView() {
           onClick={() => setSubTab('recipes')}
           className={`py-2 text-xs font-semibold rounded-xl flex items-center justify-center gap-1 transition select-none ${
             subTab === 'recipes'
-              ? 'bg-[#007AFF] text-white shadow-xs'
-              : 'text-[#8E8E93] hover:text-[#1C1C1E]'
+              ? 'bg-white text-[#1C1917] shadow-sm'
+              : 'text-[#78716C] hover:text-[#1C1917]'
           }`}
         >
           <BookOpen className="w-4 h-4 shrink-0" />
@@ -405,8 +422,8 @@ export function MealsView() {
           onClick={() => setSubTab('ideas')}
           className={`py-2 text-xs font-semibold rounded-xl flex items-center justify-center gap-1 transition select-none ${
             subTab === 'ideas'
-              ? 'bg-[#007AFF] text-white shadow-xs'
-              : 'text-[#8E8E93] hover:text-[#1C1C1E]'
+              ? 'bg-white text-[#1C1917] shadow-sm'
+              : 'text-[#78716C] hover:text-[#1C1917]'
           }`}
         >
           <Lightbulb className="w-4 h-4 shrink-0" />
@@ -420,19 +437,19 @@ export function MealsView() {
       {subTab === 'week' && (
         <div className="space-y-4">
           {/* Navigateur de semaine */}
-          <div className="flex items-center justify-between bg-white border border-[#E5E5EA] rounded-2xl p-1.5 px-3 shadow-2xs">
+          <div className="flex items-center justify-between bg-white border border-[#E7E5E4] rounded-2xl p-1.5 px-3">
             <button
               onClick={prevWeek}
-              className="p-1.5 rounded-xl text-[#8E8E93] hover:text-[#1C1C1E] active:bg-[#F2F2F7] transition"
+              className="p-1.5 rounded-xl text-[#A8A29E] hover:text-[#1C1917] active:bg-[#F5F5F4] transition"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <span className="text-xs font-bold text-[#1C1C1E]">
+            <span className="text-xs font-bold text-[#1C1917]">
               {weekRangeLabel}
             </span>
             <button
               onClick={nextWeek}
-              className="p-1.5 rounded-xl text-[#8E8E93] hover:text-[#1C1C1E] active:bg-[#F2F2F7] transition"
+              className="p-1.5 rounded-xl text-[#A8A29E] hover:text-[#1C1917] active:bg-[#F5F5F4] transition"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -440,7 +457,7 @@ export function MealsView() {
 
           {loading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="w-8 h-8 text-[#007AFF] animate-spin" />
+              <Loader2 className="w-7 h-7 text-[#F97316] animate-spin" />
             </div>
           ) : (
             /* Liste des 7 jours */
@@ -453,45 +470,52 @@ export function MealsView() {
                 return (
                   <div
                     key={day.iso}
-                    className={`bg-white rounded-2xl border shadow-xs transition overflow-hidden ${
+                    className={`bg-white rounded-2xl border transition overflow-hidden ${
                       day.isToday
-                        ? 'border-[#007AFF] ring-1 ring-[#007AFF]/20'
-                        : 'border-[#E5E5EA]'
+                        ? 'border-[#F97316] ring-1 ring-[#F97316]/20'
+                        : 'border-[#E7E5E4]'
                     }`}
                   >
                     {/* En-tête du jour */}
-                    <div className="flex items-center justify-between px-3.5 py-2.5 bg-[#F2F2F7]/50 border-b border-[#E5E5EA]">
+                    <div className="flex items-center justify-between px-3.5 py-2.5 bg-[#FFFDF9] border-b border-[#F5F5F4]">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-[#1C1C1E]">
+                        <span className="text-sm font-bold text-[#1C1917]">
                           {day.name}
                         </span>
-                        <span className="text-xs text-[#8E8E93] font-medium">
+                        <span className="text-xs text-[#A8A29E] font-medium">
                           {day.formattedLabel}
                         </span>
                       </div>
                       {day.isToday && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#007AFF] text-white">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F97316] text-white">
                           Aujourd&apos;hui
                         </span>
                       )}
                     </div>
 
                     {/* Créneaux Midi et Soir */}
-                    <div className="divide-y divide-[#E5E5EA]/70">
+                    <div className="divide-y divide-[#F5F5F4]">
                       {/* MIDI */}
-                      <div className="p-3 flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-2 text-xs font-semibold text-[#8E8E93] w-14 shrink-0 pt-0.5">
-                          <Sun className="w-3.5 h-3.5 text-[#FF9500]" />
+                      <div className="p-3 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#F97316]/10 text-[#F97316] text-xs font-bold w-16 shrink-0 justify-center">
+                          <Sun className="w-3.5 h-3.5 stroke-[2.5]" />
                           <span>Midi</span>
                         </div>
 
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           {lunch ? (
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-sm font-semibold text-[#1C1C1E]">
+                              <span className="text-sm font-semibold text-[#1C1917] truncate">
                                 {lunch}
                               </span>
                               <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  onClick={() => addMealToShopping(lunch)}
+                                  title="Ajouter aux courses"
+                                  className="w-7 h-7 rounded-lg text-[#A8A29E] hover:text-[#F97316] hover:bg-[#F97316]/10 flex items-center justify-center transition"
+                                >
+                                  <ShoppingBag className="w-3.5 h-3.5" />
+                                </button>
                                 <button
                                   onClick={() => {
                                     setEditingDay({
@@ -502,13 +526,15 @@ export function MealsView() {
                                     })
                                     setMealInputValue(lunch)
                                   }}
-                                  className="w-7 h-7 rounded-lg text-[#8E8E93] hover:text-[#1C1C1E] hover:bg-[#F2F2F7] flex items-center justify-center transition"
+                                  title="Modifier"
+                                  className="w-7 h-7 rounded-lg text-[#A8A29E] hover:text-[#1C1917] hover:bg-[#F5F5F4] flex items-center justify-center transition"
                                 >
                                   <Edit2 className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => saveMeal(day.iso, 'lunch', '')}
-                                  className="w-7 h-7 rounded-lg text-[#8E8E93] hover:text-[#FF3B30] hover:bg-[#F2F2F7] flex items-center justify-center transition"
+                                  title="Supprimer"
+                                  className="w-7 h-7 rounded-lg text-[#A8A29E] hover:text-[#EF4444] hover:bg-[#F5F5F4] flex items-center justify-center transition"
                                 >
                                   <X className="w-3.5 h-3.5" />
                                 </button>
@@ -525,7 +551,7 @@ export function MealsView() {
                                 })
                                 setMealInputValue('')
                               }}
-                              className="text-xs text-[#8E8E93] hover:text-[#007AFF] font-medium py-1 px-2 rounded-lg hover:bg-[#F2F2F7] transition flex items-center gap-1.5"
+                              className="w-full text-xs text-[#A8A29E] hover:text-[#F97316] font-medium py-1.5 px-3 rounded-xl border border-dashed border-[#E7E5E4] hover:border-[#F97316]/40 hover:bg-[#F97316]/5 transition flex items-center gap-1.5 justify-center"
                             >
                               <Plus className="w-3.5 h-3.5" />
                               <span>Planifier le midi</span>
@@ -535,19 +561,26 @@ export function MealsView() {
                       </div>
 
                       {/* SOIR */}
-                      <div className="p-3 flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-2 text-xs font-semibold text-[#8E8E93] w-14 shrink-0 pt-0.5">
-                          <Moon className="w-3.5 h-3.5 text-[#5856D6]" />
+                      <div className="p-3 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#8B5CF6]/10 text-[#8B5CF6] text-xs font-bold w-16 shrink-0 justify-center">
+                          <Moon className="w-3.5 h-3.5 stroke-[2.5]" />
                           <span>Soir</span>
                         </div>
 
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           {dinner ? (
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-sm font-semibold text-[#1C1C1E]">
+                              <span className="text-sm font-semibold text-[#1C1917] truncate">
                                 {dinner}
                               </span>
                               <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  onClick={() => addMealToShopping(dinner)}
+                                  title="Ajouter aux courses"
+                                  className="w-7 h-7 rounded-lg text-[#A8A29E] hover:text-[#F97316] hover:bg-[#F97316]/10 flex items-center justify-center transition"
+                                >
+                                  <ShoppingBag className="w-3.5 h-3.5" />
+                                </button>
                                 <button
                                   onClick={() => {
                                     setEditingDay({
@@ -558,13 +591,15 @@ export function MealsView() {
                                     })
                                     setMealInputValue(dinner)
                                   }}
-                                  className="w-7 h-7 rounded-lg text-[#8E8E93] hover:text-[#1C1C1E] hover:bg-[#F2F2F7] flex items-center justify-center transition"
+                                  title="Modifier"
+                                  className="w-7 h-7 rounded-lg text-[#A8A29E] hover:text-[#1C1917] hover:bg-[#F5F5F4] flex items-center justify-center transition"
                                 >
                                   <Edit2 className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => saveMeal(day.iso, 'dinner', '')}
-                                  className="w-7 h-7 rounded-lg text-[#8E8E93] hover:text-[#FF3B30] hover:bg-[#F2F2F7] flex items-center justify-center transition"
+                                  title="Supprimer"
+                                  className="w-7 h-7 rounded-lg text-[#A8A29E] hover:text-[#EF4444] hover:bg-[#F5F5F4] flex items-center justify-center transition"
                                 >
                                   <X className="w-3.5 h-3.5" />
                                 </button>
@@ -581,7 +616,7 @@ export function MealsView() {
                                 })
                                 setMealInputValue('')
                               }}
-                              className="text-xs text-[#8E8E93] hover:text-[#007AFF] font-medium py-1 px-2 rounded-lg hover:bg-[#F2F2F7] transition flex items-center gap-1.5"
+                              className="w-full text-xs text-[#A8A29E] hover:text-[#8B5CF6] font-medium py-1.5 px-3 rounded-xl border border-dashed border-[#E7E5E4] hover:border-[#8B5CF6]/40 hover:bg-[#8B5CF6]/5 transition flex items-center gap-1.5 justify-center"
                             >
                               <Plus className="w-3.5 h-3.5" />
                               <span>Planifier le soir</span>
@@ -624,9 +659,9 @@ export function MealsView() {
           {/* Formulaire d'ajout d'une idée */}
           <form
             onSubmit={handleAddIdea}
-            className="bg-white rounded-2xl p-2.5 border border-[#E5E5EA] shadow-xs flex items-center gap-2"
+            className="bg-white rounded-2xl p-2.5 border border-[#E7E5E4] flex items-center gap-2"
           >
-            <div className="w-7 h-7 rounded-full bg-[#007AFF]/10 text-[#007AFF] flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded-full bg-[#F97316]/10 text-[#F97316] flex items-center justify-center shrink-0">
               <Lightbulb className="w-4 h-4 stroke-[2.5]" />
             </div>
             <input
@@ -634,12 +669,12 @@ export function MealsView() {
               placeholder="Une envie ? (ex: Lasagnes, Tacos, Risotto...)"
               value={newIdeaTitle}
               onChange={(e) => setNewIdeaTitle(e.target.value)}
-              className="flex-1 bg-transparent text-[#1C1C1E] placeholder-[#8E8E93] text-[15px] focus:outline-none"
+              className="flex-1 bg-transparent text-[#1C1917] placeholder-[#A8A29E] text-[15px] focus:outline-none"
             />
             <button
               type="submit"
               disabled={!newIdeaTitle.trim() || isSubmittingIdea}
-              className="px-3.5 py-1.5 rounded-xl bg-[#007AFF] text-white text-xs font-semibold disabled:opacity-30 disabled:pointer-events-none transition shrink-0 active:scale-95 shadow-xs"
+              className="px-3.5 py-1.5 rounded-xl bg-[#F97316] text-white text-xs font-semibold disabled:opacity-30 disabled:pointer-events-none transition shrink-0 active:scale-95"
             >
               {isSubmittingIdea ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -649,25 +684,25 @@ export function MealsView() {
             </button>
           </form>
 
-          {/* Bouton roulette magique "Qu'est-ce qu'on mange ?" */}
+          {/* Bouton roulette magique */}
           {ideas.length > 1 && (
-            <div className="bg-gradient-to-r from-[#007AFF]/10 to-[#5856D6]/10 border border-[#007AFF]/20 rounded-2xl p-3 flex items-center justify-between gap-3">
+            <div className="bg-[#F97316]/5 border border-[#F97316]/15 rounded-2xl p-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#007AFF] text-white flex items-center justify-center shadow-xs">
+                <div className="w-8 h-8 rounded-xl bg-[#F97316] text-white flex items-center justify-center">
                   <Dice5 className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-[#1C1C1E]">
+                  <div className="text-xs font-bold text-[#1C1917]">
                     Pas d&apos;idée ce soir ?
                   </div>
-                  <div className="text-[11px] text-[#8E8E93]">
+                  <div className="text-[11px] text-[#78716C]">
                     Piocher au hasard dans la boîte à idées
                   </div>
                 </div>
               </div>
               <button
                 onClick={pickRandomIdea}
-                className="px-3 py-1.5 rounded-xl bg-[#007AFF] text-white text-xs font-semibold active:scale-95 transition shadow-xs shrink-0"
+                className="px-3 py-1.5 rounded-xl bg-[#F97316] text-white text-xs font-semibold active:scale-95 transition shrink-0"
               >
                 Tirer au sort
               </button>
@@ -676,20 +711,20 @@ export function MealsView() {
 
           {/* Résultat du tirage au sort */}
           {randomIdea && (
-            <div className="bg-white border-2 border-[#007AFF] rounded-2xl p-4 shadow-sm space-y-2 animate-in zoom-in-95 duration-150">
+            <div className="bg-white border-2 border-[#F97316] rounded-2xl p-4 space-y-2 animate-in zoom-in-95 duration-150">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#007AFF] flex items-center gap-1">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#F97316] flex items-center gap-1">
                   <Sparkles className="w-3.5 h-3.5" />
                   Idée sélectionnée
                 </span>
                 <button
                   onClick={() => setRandomIdea(null)}
-                  className="text-[#8E8E93] hover:text-[#1C1C1E]"
+                  className="text-[#A8A29E] hover:text-[#1C1917]"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="text-base font-bold text-[#1C1C1E]">
+              <div className="text-base font-bold text-[#1C1917]">
                 {randomIdea.title}
               </div>
               <div className="flex gap-2 pt-1">
@@ -698,7 +733,7 @@ export function MealsView() {
                     setAssigningIdea(randomIdea)
                     setRandomIdea(null)
                   }}
-                  className="flex-1 py-1.5 px-3 rounded-xl bg-[#007AFF] text-white text-xs font-semibold flex items-center justify-center gap-1.5"
+                  className="flex-1 py-1.5 px-3 rounded-xl bg-[#F97316] text-white text-xs font-semibold flex items-center justify-center gap-1.5"
                 >
                   <span>Planifier pour cette semaine</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -709,17 +744,17 @@ export function MealsView() {
 
           {/* Liste des idées */}
           {ideas.length === 0 ? (
-            <div className="bg-white rounded-3xl p-10 border border-[#E5E5EA] shadow-xs text-center">
-              <Lightbulb className="w-8 h-8 text-[#C7C7CC] mx-auto mb-2" />
-              <h3 className="text-sm font-semibold text-[#1C1C1E]">
+            <div className="py-10 text-center">
+              <Lightbulb className="w-8 h-8 text-[#D6D3D1] mx-auto mb-2" />
+              <h3 className="text-sm font-semibold text-[#1C1917]">
                 Aucune idée enregistrée
               </h3>
-              <p className="text-xs text-[#8E8E93] mt-0.5">
+              <p className="text-sm text-[#78716C] mt-0.5">
                 Notez les plats que vous aimez pour les retrouver et les planifier facilement.
               </p>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-[#E5E5EA] shadow-xs overflow-hidden divide-y divide-[#E5E5EA]">
+            <div className="bg-white rounded-2xl border border-[#E7E5E4] overflow-hidden divide-y divide-[#F5F5F4]">
               {ideas.map((idea) => {
                 const authorName = idea.added_by
                   ? memberMap.get(idea.added_by)
@@ -728,14 +763,14 @@ export function MealsView() {
                 return (
                   <div
                     key={idea.id}
-                    className="p-3.5 flex items-center justify-between gap-3 hover:bg-black/[0.01] transition"
+                    className="p-3.5 flex items-center justify-between gap-3 hover:bg-[#FFFDF9] transition"
                   >
                     <div className="flex-1">
-                      <div className="text-sm font-semibold text-[#1C1C1E]">
+                      <div className="text-sm font-semibold text-[#1C1917]">
                         {idea.title}
                       </div>
                       {authorName && (
-                        <div className="text-[11px] text-[#8E8E93] mt-0.5">
+                        <div className="text-[11px] text-[#A8A29E] mt-0.5">
                           Proposé par {authorName}
                         </div>
                       )}
@@ -744,13 +779,13 @@ export function MealsView() {
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         onClick={() => setAssigningIdea(idea)}
-                        className="px-2.5 py-1.5 rounded-xl bg-[#007AFF]/10 text-[#007AFF] hover:bg-[#007AFF] hover:text-white text-xs font-semibold transition"
+                        className="px-2.5 py-1.5 rounded-xl bg-[#F97316]/10 text-[#F97316] hover:bg-[#F97316] hover:text-white text-xs font-semibold transition"
                       >
                         Planifier
                       </button>
                       <button
                         onClick={() => handleDeleteIdea(idea.id)}
-                        className="w-8 h-8 rounded-xl text-[#C7C7CC] hover:text-[#FF3B30] flex items-center justify-center transition"
+                        className="w-8 h-8 rounded-xl text-[#D6D3D1] hover:text-[#EF4444] flex items-center justify-center transition"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -772,21 +807,21 @@ export function MealsView() {
             className="fixed inset-0 bg-black/40 backdrop-blur-xs"
             onClick={() => setEditingDay(null)}
           />
-          <div className="relative w-full max-w-md bg-white rounded-t-[28px] sm:rounded-3xl p-6 shadow-2xl z-10 space-y-4 animate-in slide-in-from-bottom duration-200">
-            <div className="w-9 h-1 rounded-full bg-[#C7C7CC] mx-auto -mt-2 mb-2 sm:hidden" />
+          <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-lg z-10 space-y-4 animate-in slide-in-from-bottom duration-200">
+            <div className="w-9 h-1 rounded-full bg-[#D6D3D1] mx-auto -mt-2 mb-2 sm:hidden" />
 
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-[#1C1C1E]">
+                <h3 className="text-base font-bold text-[#1C1917]">
                   Repas du {editingDay.dayLabel}
                 </h3>
-                <p className="text-xs text-[#8E8E93]">
+                <p className="text-xs text-[#78716C]">
                   Qu&apos;avez-vous prévu de manger ?
                 </p>
               </div>
               <button
                 onClick={() => setEditingDay(null)}
-                className="w-8 h-8 rounded-full bg-[#F2F2F7] flex items-center justify-center text-[#8E8E93]"
+                className="w-8 h-8 rounded-full bg-[#F5F5F4] flex items-center justify-center text-[#78716C]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -806,13 +841,13 @@ export function MealsView() {
                 placeholder="ex: Gratin dauphinois, Salade composée..."
                 value={mealInputValue}
                 onChange={(e) => setMealInputValue(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl bg-[#F2F2F7] text-[#1C1C1E] placeholder-[#8E8E93] text-sm focus:outline-none focus:ring-1 focus:ring-[#007AFF] transition"
+                className="w-full px-4 py-3 rounded-2xl bg-[#FFFDF9] text-[#1C1917] placeholder-[#A8A29E] text-sm focus:outline-none focus:ring-1 focus:ring-[#F97316] transition border border-[#E7E5E4]"
               />
 
               {/* Suggestions rapides depuis la boîte à idées */}
               {ideas.length > 0 && (
                 <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[#8E8E93] mb-1.5">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E] mb-1.5">
                     Piocher dans vos idées :
                   </div>
                   <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
@@ -821,7 +856,7 @@ export function MealsView() {
                         key={idea.id}
                         type="button"
                         onClick={() => setMealInputValue(idea.title)}
-                        className="text-xs px-2.5 py-1 rounded-full bg-[#F2F2F7] hover:bg-[#007AFF]/10 hover:text-[#007AFF] text-[#1C1C1E] transition font-medium"
+                        className="text-xs px-2.5 py-1 rounded-full bg-[#F5F5F4] hover:bg-[#F97316]/10 hover:text-[#F97316] text-[#1C1917] transition font-medium"
                       >
                         {idea.title}
                       </button>
@@ -837,13 +872,13 @@ export function MealsView() {
                     saveMeal(editingDay.date, editingDay.mealType, '')
                     setEditingDay(null)
                   }}
-                  className="px-4 py-3 rounded-2xl bg-[#F2F2F7] text-[#8E8E93] hover:text-[#FF3B30] text-xs font-semibold transition"
+                  className="px-4 py-3 rounded-2xl bg-[#F5F5F4] text-[#78716C] hover:text-[#EF4444] text-xs font-semibold transition"
                 >
                   Effacer
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 rounded-2xl bg-[#007AFF] text-white text-sm font-semibold transition active:scale-[0.98] shadow-xs"
+                  className="flex-1 py-3 rounded-2xl bg-[#F97316] text-white text-sm font-semibold transition active:scale-[0.98]"
                 >
                   Enregistrer
                 </button>
@@ -862,21 +897,21 @@ export function MealsView() {
             className="fixed inset-0 bg-black/40 backdrop-blur-xs"
             onClick={() => setAssigningIdea(null)}
           />
-          <div className="relative w-full max-w-md bg-white rounded-t-[28px] sm:rounded-3xl p-6 shadow-2xl z-10 space-y-4 animate-in slide-in-from-bottom duration-200">
-            <div className="w-9 h-1 rounded-full bg-[#C7C7CC] mx-auto -mt-2 mb-2 sm:hidden" />
+          <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-lg z-10 space-y-4 animate-in slide-in-from-bottom duration-200">
+            <div className="w-9 h-1 rounded-full bg-[#D6D3D1] mx-auto -mt-2 mb-2 sm:hidden" />
 
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-[#1C1C1E]">
+                <h3 className="text-base font-bold text-[#1C1917]">
                   Planifier « {assigningIdea.title} »
                 </h3>
-                <p className="text-xs text-[#8E8E93]">
+                <p className="text-xs text-[#78716C]">
                   Choisissez le jour et le moment du repas
                 </p>
               </div>
               <button
                 onClick={() => setAssigningIdea(null)}
-                className="w-8 h-8 rounded-full bg-[#F2F2F7] flex items-center justify-center text-[#8E8E93]"
+                className="w-8 h-8 rounded-full bg-[#F5F5F4] flex items-center justify-center text-[#78716C]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -886,22 +921,22 @@ export function MealsView() {
               {weekDays.map((day) => (
                 <div
                   key={day.iso}
-                  className="flex items-center justify-between p-2.5 bg-[#F2F2F7] rounded-xl"
+                  className="flex items-center justify-between p-2.5 bg-[#FFFDF9] rounded-xl"
                 >
-                  <span className="text-xs font-bold text-[#1C1C1E]">
+                  <span className="text-xs font-bold text-[#1C1917]">
                     {day.name} ({day.formattedLabel})
                   </span>
                   <div className="flex gap-1.5">
                     <button
                       onClick={() => assignIdeaToDay(day.iso, 'lunch')}
-                      className="px-2.5 py-1 rounded-lg bg-white text-xs font-semibold text-[#FF9500] hover:bg-[#FF9500] hover:text-white transition shadow-2xs flex items-center gap-1"
+                      className="px-2.5 py-1 rounded-lg bg-white text-xs font-semibold text-[#F97316] hover:bg-[#F97316] hover:text-white transition border border-[#E7E5E4] flex items-center gap-1"
                     >
                       <Sun className="w-3 h-3" />
                       Midi
                     </button>
                     <button
                       onClick={() => assignIdeaToDay(day.iso, 'dinner')}
-                      className="px-2.5 py-1 rounded-lg bg-white text-xs font-semibold text-[#5856D6] hover:bg-[#5856D6] hover:text-white transition shadow-2xs flex items-center gap-1"
+                      className="px-2.5 py-1 rounded-lg bg-white text-xs font-semibold text-[#8B5CF6] hover:bg-[#8B5CF6] hover:text-white transition border border-[#E7E5E4] flex items-center gap-1"
                     >
                       <Moon className="w-3 h-3" />
                       Soir

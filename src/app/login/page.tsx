@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { ShoppingBag, LogIn, UserPlus, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { LogIn, UserPlus, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false)
@@ -77,29 +77,29 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F2F2F7] text-[#1C1C1E] flex flex-col justify-center px-4 py-8 pt-safe pb-safe">
+    <div className="min-h-screen bg-[#FFFDF9] text-[#1C1917] flex flex-col justify-center px-4 py-8 pt-safe pb-safe">
       <div className="max-w-sm w-full mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="w-18 h-18 mx-auto rounded-3xl overflow-hidden shadow-sm border border-[#E5E5EA]">
+          <div className="w-18 h-18 mx-auto rounded-3xl overflow-hidden shadow-sm border border-[#E7E5E4]">
             <img
               src="/icon.png"
               alt="EatList"
               className="w-full h-full object-cover"
             />
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-[#1C1C1E] pt-1">
+          <h1 className="text-2xl font-extrabold tracking-tight text-[#1C1917] pt-1">
             EatList
           </h1>
-          <p className="text-xs text-[#8E8E93]">
+          <p className="text-sm text-[#78716C]">
             Repas, courses, recettes & budget partagés
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-white border border-[#E5E5EA] rounded-3xl p-6 shadow-xs space-y-5">
-          {/* Segmented control iOS */}
-          <div className="grid grid-cols-2 p-1 bg-[#F2F2F7] rounded-2xl">
+        <div className="bg-white border border-[#E7E5E4] rounded-2xl p-6 space-y-5">
+          {/* Segmented control */}
+          <div className="grid grid-cols-2 p-1 bg-[#F5F5F4] rounded-2xl">
             <button
               type="button"
               onClick={() => {
@@ -109,8 +109,8 @@ export default function LoginPage() {
               }}
               className={`py-2 text-xs font-semibold rounded-xl transition ${
                 !isSignUp
-                  ? 'bg-white text-[#1C1C1E] shadow-xs'
-                  : 'text-[#8E8E93] hover:text-[#1C1C1E]'
+                  ? 'bg-white text-[#1C1917] shadow-sm'
+                  : 'text-[#78716C] hover:text-[#1C1917]'
               }`}
             >
               Connexion
@@ -124,8 +124,8 @@ export default function LoginPage() {
               }}
               className={`py-2 text-xs font-semibold rounded-xl transition ${
                 isSignUp
-                  ? 'bg-white text-[#1C1C1E] shadow-xs'
-                  : 'text-[#8E8E93] hover:text-[#1C1C1E]'
+                  ? 'bg-white text-[#1C1917] shadow-sm'
+                  : 'text-[#78716C] hover:text-[#1C1917]'
               }`}
             >
               Inscription
@@ -133,14 +133,14 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 p-3 rounded-2xl bg-[#FF3B30]/10 border border-[#FF3B30]/20 text-[#FF3B30] text-xs font-medium">
+            <div className="flex items-center gap-2 p-3 rounded-2xl bg-[#EF4444]/10 border border-[#EF4444]/20 text-[#EF4444] text-xs font-medium">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           {message && (
-            <div className="flex items-center gap-2 p-3 rounded-2xl bg-[#34C759]/10 border border-[#34C759]/20 text-[#34C759] text-xs font-medium">
+            <div className="flex items-center gap-2 p-3 rounded-2xl bg-[#22C55E]/10 border border-[#22C55E]/20 text-[#22C55E] text-xs font-medium">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>{message}</span>
             </div>
@@ -149,7 +149,7 @@ export default function LoginPage() {
           <form onSubmit={handleAuth} className="space-y-4">
             {isSignUp && (
               <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#8E8E93] mb-1.5">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E] mb-1.5">
                   Prénom
                 </label>
                 <input
@@ -158,13 +158,13 @@ export default function LoginPage() {
                   placeholder="ex: Nicolas, Chloé..."
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl bg-[#F2F2F7] text-[#1C1C1E] placeholder-[#8E8E93] text-sm focus:outline-none focus:ring-1 focus:ring-[#007AFF] transition"
+                  className="w-full px-4 py-3 rounded-2xl bg-[#FFFDF9] text-[#1C1917] placeholder-[#A8A29E] text-sm focus:outline-none focus:ring-1 focus:ring-[#F97316] transition border border-[#E7E5E4]"
                 />
               </div>
             )}
 
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#8E8E93] mb-1.5">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E] mb-1.5">
                 Adresse e-mail
               </label>
               <input
@@ -173,12 +173,12 @@ export default function LoginPage() {
                 placeholder="votre@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl bg-[#F2F2F7] text-[#1C1C1E] placeholder-[#8E8E93] text-sm focus:outline-none focus:ring-1 focus:ring-[#007AFF] transition"
+                className="w-full px-4 py-3 rounded-2xl bg-[#FFFDF9] text-[#1C1917] placeholder-[#A8A29E] text-sm focus:outline-none focus:ring-1 focus:ring-[#F97316] transition border border-[#E7E5E4]"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#8E8E93] mb-1.5">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E] mb-1.5">
                 Mot de passe
               </label>
               <input
@@ -187,14 +187,14 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl bg-[#F2F2F7] text-[#1C1C1E] placeholder-[#8E8E93] text-sm focus:outline-none focus:ring-1 focus:ring-[#007AFF] transition"
+                className="w-full px-4 py-3 rounded-2xl bg-[#FFFDF9] text-[#1C1917] placeholder-[#A8A29E] text-sm focus:outline-none focus:ring-1 focus:ring-[#F97316] transition border border-[#E7E5E4]"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-12 rounded-2xl font-bold text-white bg-[#007AFF] hover:bg-[#007AFF]/90 active:scale-[0.98] transition shadow-xs disabled:opacity-40 flex items-center justify-center gap-2 mt-2"
+              className="w-full h-12 rounded-2xl font-bold text-white bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] transition disabled:opacity-40 flex items-center justify-center gap-2 mt-2"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />

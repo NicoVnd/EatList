@@ -7,7 +7,6 @@ import { useHousehold } from '@/context/HouseholdContext'
 import {
   ChevronLeft,
   ChevronRight,
-  Store,
   Trash2,
   PieChart,
   Loader2,
@@ -15,10 +14,11 @@ import {
   BarChart3,
   TrendingUp,
   Award,
-  Sparkles,
   ShoppingBag,
   ArrowRight,
-  Info,
+  Scale,
+  Sparkles,
+  Store,
 } from 'lucide-react'
 
 const MONTH_NAMES_FR = [
@@ -82,7 +82,7 @@ export function BudgetView() {
     [members]
   )
 
-  const memberColors = ['#007AFF', '#AF52DE', '#FF9500', '#34C759']
+  const memberColors = ['#F97316', '#8B5CF6', '#F59E0B', '#22C55E']
 
   const formatEuro = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -153,19 +153,70 @@ export function BudgetView() {
     }
   }
 
-  const monthlyTotal = monthlyExpenses.reduce(
-    (acc, curr) => acc + Number(curr.amount),
-    0
+  const monthlyTotal = useMemo(
+    () => monthlyExpenses.reduce((acc, curr) => acc + Number(curr.amount), 0),
+    [monthlyExpenses]
   )
 
-  const monthlyMemberTotals: { [userId: string]: number } = {}
-  members.forEach((m) => {
-    monthlyMemberTotals[m.user_id] = 0
-  })
-  monthlyExpenses.forEach((e) => {
-    monthlyMemberTotals[e.paid_by] =
-      (monthlyMemberTotals[e.paid_by] || 0) + Number(e.amount)
-  })
+  const monthlyMemberTotals = useMemo(() => {
+    const totals: { [userId: string]: number } = {}
+    members.forEach((m) => {
+      totals[m.user_id] = 0
+    })
+    monthlyExpenses.forEach((e) => {
+      totals[e.paid_by] = (totals[e.paid_by] || 0) + Number(e.amount)
+    })
+    return totals
+  }, [members, monthlyExpenses])
+
+  // Calcul du règlement / équilibre
+  const settlementInfo = useMemo(() => {
+    if (members.length !== 2 || monthlyTotal === 0) return null
+    const [m1, m2] = members
+    const t1 = monthlyMemberTotals[m1.user_id] || 0
+    const t2 = monthlyMemberTotals[m2.user_id] || 0
+    const idealPerPerson = monthlyTotal / 2
+    const diff = Math.abs(t1 - idealPerPerson)
+
+    if (diff < 0.5) {
+      return {
+        balanced: true,
+        message: 'Les dépenses sont parfaitement équilibrées (50 / 50)',
+      }
+    }
+
+    const debtor = t1 < t2 ? m1 : m2
+    const creditor = t1 < t2 ? m2 : m1
+    return {
+      balanced: false,
+      debtorName: debtor.user?.name || 'Membre',
+      creditorName: creditor.user?.name || 'Membre',
+      amount: diff,
+      message: `${debtor.user?.name || 'Membre'} doit ${formatEuro(diff)} à ${
+        creditor.user?.name || 'Membre'
+      }`,
+    }
+  }, [members, monthlyTotal, monthlyMemberTotals])
+
+  // Top enseignes du mois
+  const monthlyTopStores = useMemo(() => {
+    const storeMap = new Map<string, { total: number; count: number }>()
+    monthlyExpenses.forEach((exp) => {
+      const amount = Number(exp.amount)
+      const raw = (exp.description || 'Courses').trim()
+      const name = raw.charAt(0).toUpperCase() + raw.slice(1)
+      const curr = storeMap.get(name) || { total: 0, count: 0 }
+      storeMap.set(name, { total: curr.total + amount, count: curr.count + 1 })
+    })
+    return Array.from(storeMap.entries())
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 3)
+  }, [monthlyExpenses])
+
+  // Moyenne panier du mois
+  const averageMonthlyExpense =
+    monthlyExpenses.length > 0 ? monthlyTotal / monthlyExpenses.length : 0
 
   // =========================================================================
   // GESTION MODE ANNÉE
@@ -210,7 +261,6 @@ export function BudgetView() {
     }
   }, [budgetMode, fetchAnnualExpenses])
 
-  // Statistiques annuelles calculées
   const annualStats = useMemo(() => {
     const months = Array.from({ length: 12 }, (_, i) => ({
       index: i,
@@ -239,7 +289,6 @@ export function BudgetView() {
 
       memberTotals[exp.paid_by] = (memberTotals[exp.paid_by] || 0) + amount
 
-      // Top Enseignes
       const rawStore = (exp.description || 'Courses').trim()
       const storeName = rawStore.charAt(0).toUpperCase() + rawStore.slice(1)
       const currStore = storeMap.get(storeName) || { total: 0, count: 0 }
@@ -252,15 +301,11 @@ export function BudgetView() {
     const total = months.reduce((acc, m) => acc + m.total, 0)
     const totalTransactions = annualExpenses.length
 
-    // Moyenne mensuelle : diviser par les mois écoulés si année courante, sinon 12
     const isCurrentYear = new Date().getFullYear() === selectedYear
     const elapsedMonths = isCurrentYear ? Math.max(1, new Date().getMonth() + 1) : 12
     const averagePerMonth = total / elapsedMonths
-
-    // Panier moyen par transaction
     const averagePerExpense = totalTransactions > 0 ? total / totalTransactions : 0
 
-    // Mois max et min (avec au moins 1 dépense)
     const maxMonth = [...months].sort((a, b) => b.total - a.total)[0]
     const monthsWithSpend = months.filter((m) => m.total > 0)
     const minMonth =
@@ -270,7 +315,6 @@ export function BudgetView() {
 
     const maxChartValue = Math.max(...months.map((m) => m.total), 1)
 
-    // Top 4 enseignes
     const topStores = Array.from(storeMap.entries())
       .map(([name, data]) => ({ name, ...data }))
       .sort((a, b) => b.total - a.total)
@@ -290,7 +334,6 @@ export function BudgetView() {
     }
   }, [annualExpenses, members, selectedYear])
 
-  // Naviguer du récap annuel directement vers le mois sélectionné
   const jumpToMonth = (monthIndex: number) => {
     setCurrentDate(new Date(selectedYear, monthIndex, 1))
     setBudgetMode('month')
@@ -298,56 +341,56 @@ export function BudgetView() {
 
   return (
     <div className="space-y-4 tabbar-offset">
-      {/* iOS Large Title Header */}
-      <div className="pt-1 pb-1 flex items-baseline justify-between">
+      {/* Header */}
+      <div className="pt-1 pb-0.5 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#1C1C1E]">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1C1917]">
             Budget
           </h1>
-          <p className="text-xs text-[#8E8E93] font-medium mt-0.5">
+          <p className="text-sm text-[#78716C] mt-0.5">
             {budgetMode === 'month'
-              ? 'Dépenses & répartition du mois'
+              ? 'Dépenses & équilibre du foyer'
               : `Bilan & statistiques de l'année ${selectedYear}`}
           </p>
         </div>
 
         {/* Sélecteur de période */}
         {budgetMode === 'month' ? (
-          <div className="flex items-center bg-white border border-[#E5E5EA] rounded-full p-0.5 shadow-2xs">
+          <div className="flex items-center bg-white border border-[#E7E5E4] rounded-full p-0.5">
             <button
               onClick={prevMonth}
               aria-label="Mois précédent"
-              className="w-7 h-7 rounded-full flex items-center justify-center text-[#8E8E93] hover:text-[#1C1C1E] active:bg-[#F2F2F7] transition"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[#A8A29E] hover:text-[#1C1917] active:bg-[#F5F5F4] transition"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-xs font-semibold text-[#1C1C1E] capitalize px-2">
+            <span className="text-xs font-bold text-[#1C1917] capitalize px-2.5">
               {monthYearLabel}
             </span>
             <button
               onClick={nextMonth}
               aria-label="Mois suivant"
-              className="w-7 h-7 rounded-full flex items-center justify-center text-[#8E8E93] hover:text-[#1C1C1E] active:bg-[#F2F2F7] transition"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[#A8A29E] hover:text-[#1C1917] active:bg-[#F5F5F4] transition"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         ) : (
-          <div className="flex items-center bg-white border border-[#E5E5EA] rounded-full p-0.5 shadow-2xs">
+          <div className="flex items-center bg-white border border-[#E7E5E4] rounded-full p-0.5">
             <button
               onClick={prevYear}
               aria-label="Année précédente"
-              className="w-7 h-7 rounded-full flex items-center justify-center text-[#8E8E93] hover:text-[#1C1C1E] active:bg-[#F2F2F7] transition"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[#A8A29E] hover:text-[#1C1917] active:bg-[#F5F5F4] transition"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-xs font-bold text-[#1C1C1E] px-2.5">
+            <span className="text-xs font-bold text-[#1C1917] px-2.5">
               {selectedYear}
             </span>
             <button
               onClick={nextYear}
               aria-label="Année suivante"
-              className="w-7 h-7 rounded-full flex items-center justify-center text-[#8E8E93] hover:text-[#1C1C1E] active:bg-[#F2F2F7] transition"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[#A8A29E] hover:text-[#1C1917] active:bg-[#F5F5F4] transition"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -355,14 +398,14 @@ export function BudgetView() {
         )}
       </div>
 
-      {/* Segmented Control iOS : Mois vs Année */}
-      <div className="grid grid-cols-2 p-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xs">
+      {/* Segmented Control : Mois vs Année */}
+      <div className="grid grid-cols-2 p-1 bg-[#F5F5F4] border border-[#E7E5E4] rounded-2xl">
         <button
           onClick={() => setBudgetMode('month')}
-          className={`py-2 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition select-none ${
+          className={`py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition select-none ${
             budgetMode === 'month'
-              ? 'bg-[#007AFF] text-white shadow-xs'
-              : 'text-[#8E8E93] hover:text-[#1C1C1E]'
+              ? 'bg-white text-[#1C1917] shadow-sm'
+              : 'text-[#78716C] hover:text-[#1C1917]'
           }`}
         >
           <Calendar className="w-4 h-4" />
@@ -370,10 +413,10 @@ export function BudgetView() {
         </button>
         <button
           onClick={() => setBudgetMode('year')}
-          className={`py-2 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition select-none ${
+          className={`py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition select-none ${
             budgetMode === 'year'
-              ? 'bg-[#007AFF] text-white shadow-xs'
-              : 'text-[#8E8E93] hover:text-[#1C1C1E]'
+              ? 'bg-white text-[#1C1917] shadow-sm'
+              : 'text-[#78716C] hover:text-[#1C1917]'
           }`}
         >
           <BarChart3 className="w-4 h-4" />
@@ -386,136 +429,219 @@ export function BudgetView() {
       {/* ================================================================= */}
       {budgetMode === 'month' && (
         <div className="space-y-4">
-          {/* Hero Card : Total Dépensé du Mois */}
-          <div className="bg-white rounded-3xl p-6 border border-[#E5E5EA] shadow-xs">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#8E8E93]">
-                Total du mois
+          {/* Hero Card : Solde total & métriques */}
+          <div className="bg-white rounded-2xl p-6 border border-[#E7E5E4] space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#A8A29E]">
+                Total dépensé ce mois-ci
               </span>
-              <span className="text-xs font-semibold text-[#8E8E93] bg-[#F2F2F7] px-2.5 py-0.5 rounded-full">
-                {monthlyExpenses.length} dépense
-                {monthlyExpenses.length > 1 ? 's' : ''}
+              <span className="text-xs font-semibold text-[#78716C] bg-[#F5F5F4] px-2.5 py-0.5 rounded-full">
+                {monthlyExpenses.length} achat{monthlyExpenses.length > 1 ? 's' : ''}
               </span>
             </div>
-            <div className="text-4xl font-extrabold text-[#1C1C1E] tracking-tight mt-1">
+
+            <div className="text-4xl font-extrabold text-[#1C1917] tracking-tight">
               {formatEuro(monthlyTotal)}
             </div>
+
+            {/* Micro métriques */}
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[#F5F5F4]">
+              <div>
+                <div className="text-[11px] text-[#A8A29E]">Panier moyen</div>
+                <div className="text-sm font-bold text-[#1C1917]">
+                  {formatEuro(averageMonthlyExpense)}
+                </div>
+              </div>
+              <div>
+                <div className="text-[11px] text-[#A8A29E]">Rythme moyen</div>
+                <div className="text-sm font-bold text-[#1C1917]">
+                  {formatEuro(monthlyTotal / 4)}{' '}
+                  <span className="text-[10px] text-[#A8A29E] font-normal">/ sem.</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Grouped Card : Répartition entre les membres */}
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E5EA] shadow-xs space-y-4">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-[#8E8E93]">
-              Répartition par membre
-            </div>
+          {/* ÉQUILIBRE DU FOYER & RÈGLEMENT */}
+          {members.length > 1 && (
+            <div className="bg-white rounded-2xl p-5 border border-[#E7E5E4] space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#A8A29E]">
+                  <Scale className="w-3.5 h-3.5 text-[#F97316]" />
+                  <span>Équilibre du foyer</span>
+                </div>
+                {settlementInfo?.balanced && (
+                  <span className="text-[10px] font-bold text-[#22C55E] bg-[#22C55E]/10 px-2 py-0.5 rounded-full">
+                    50 / 50
+                  </span>
+                )}
+              </div>
 
-            <div className="space-y-4">
-              {members.map((m, idx) => {
-                const memberTotal = monthlyMemberTotals[m.user_id] || 0
-                const percentage =
-                  monthlyTotal > 0
-                    ? Math.round((memberTotal / monthlyTotal) * 100)
-                    : 0
-                const color = memberColors[idx % memberColors.length]
+              {/* Callout de règlement */}
+              {settlementInfo && (
+                <div
+                  className={`p-3 rounded-2xl flex items-center gap-2.5 text-xs font-semibold border ${
+                    settlementInfo.balanced
+                      ? 'bg-[#22C55E]/10 border-[#22C55E]/20 text-[#22C55E]'
+                      : 'bg-[#F97316]/10 border-[#F97316]/20 text-[#F97316]'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 shrink-0" />
+                  <span>{settlementInfo.message}</span>
+                </div>
+              )}
 
-                return (
-                  <div key={m.user_id} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-2xs"
-                          style={{ backgroundColor: color }}
-                        >
-                          {(m.user?.name || 'M').charAt(0).toUpperCase()}
+              {/* Barres de répartition individuelles */}
+              <div className="space-y-3 pt-1">
+                {members.map((m, idx) => {
+                  const memberTotal = monthlyMemberTotals[m.user_id] || 0
+                  const percentage =
+                    monthlyTotal > 0
+                      ? Math.round((memberTotal / monthlyTotal) * 100)
+                      : 0
+                  const color = memberColors[idx % memberColors.length]
+
+                  return (
+                    <div key={m.user_id} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                            style={{ backgroundColor: color }}
+                          >
+                            {(m.user?.name || 'M').charAt(0).toUpperCase()}
+                          </div>
+                          <span className="font-semibold text-[#1C1917] text-xs">
+                            {m.user?.name || 'Membre'}
+                          </span>
                         </div>
-                        <span className="font-semibold text-[#1C1C1E] text-xs">
-                          {m.user?.name || 'Membre'}
-                        </span>
+
+                        <div className="text-right flex items-baseline gap-2">
+                          <span className="font-bold text-[#1C1917] text-sm">
+                            {formatEuro(memberTotal)}
+                          </span>
+                          <span className="text-xs text-[#A8A29E] font-semibold">
+                            {percentage}%
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="text-right flex items-baseline gap-2">
-                        <span className="font-bold text-[#1C1C1E] text-sm">
-                          {formatEuro(memberTotal)}
-                        </span>
-                        <span className="text-xs text-[#8E8E93] font-semibold">
-                          {percentage}%
-                        </span>
+                      {/* Progress bar */}
+                      <div className="w-full h-2 bg-[#F5F5F4] rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${percentage}%`,
+                            backgroundColor: color,
+                          }}
+                        />
                       </div>
                     </div>
-
-                    {/* Progress bar native iOS style */}
-                    <div className="w-full h-2.5 bg-[#F2F2F7] rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${percentage}%`,
-                          backgroundColor: color,
-                        }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Grouped Table View : Historique des achats */}
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-[#8E8E93] mb-2 px-1">
-              Historique des achats
+          {/* TOP ENSEIGNES (si plusieurs magasins) */}
+          {monthlyTopStores.length > 1 && (
+            <div className="bg-white rounded-2xl p-4 border border-[#E7E5E4] space-y-2.5">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-[#A8A29E] px-1">
+                Top enseignes du mois
+              </div>
+              <div className="space-y-1">
+                {monthlyTopStores.map((store) => {
+                  const percent =
+                    monthlyTotal > 0
+                      ? Math.round((store.total / monthlyTotal) * 100)
+                      : 0
+                  return (
+                    <div
+                      key={store.name}
+                      className="flex items-center justify-between p-2 rounded-xl hover:bg-[#FFFDF9] transition"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-[#F97316]/10 text-[#F97316] flex items-center justify-center shrink-0">
+                          <Store className="w-4 h-4 stroke-[2]" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-[#1C1917]">
+                            {store.name}
+                          </div>
+                          <div className="text-[10px] text-[#A8A29E]">
+                            {store.count} achat{store.count > 1 ? 's' : ''} • {percent}%
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-xs font-bold text-[#1C1917]">
+                        {formatEuro(store.total)}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* TRANSACTION FEED */}
+          <div className="space-y-1.5">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-[#A8A29E] px-1">
+              Historique des dépenses
             </div>
 
             {monthlyLoading ? (
               <div className="flex justify-center py-12">
-                <Loader2 className="w-6 h-6 text-[#007AFF] animate-spin" />
+                <Loader2 className="w-6 h-6 text-[#F97316] animate-spin" />
               </div>
             ) : monthlyExpenses.length === 0 ? (
-              <div className="bg-white rounded-3xl p-10 border border-[#E5E5EA] shadow-xs text-center">
-                <PieChart className="w-8 h-8 text-[#C7C7CC] mx-auto mb-2" />
-                <h3 className="text-sm font-semibold text-[#1C1C1E]">
+              <div className="py-10 text-center space-y-2">
+                <PieChart className="w-8 h-8 text-[#D6D3D1] mx-auto mb-1" />
+                <h3 className="text-sm font-bold text-[#1C1917]">
                   Aucune dépense ce mois-ci
                 </h3>
-                <p className="text-xs text-[#8E8E93] mt-0.5">
-                  Utilisez l&apos;onglet &quot;Dépense&quot; pour ajouter un
-                  ticket.
+                <p className="text-sm text-[#78716C] max-w-xs mx-auto">
+                  Enregistrez un ticket via l&apos;onglet &quot;Dépense&quot; pour
+                  suivre votre budget en direct.
                 </p>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-[#E5E5EA] shadow-xs overflow-hidden divide-y divide-[#E5E5EA]">
+              <div className="bg-white rounded-2xl border border-[#E7E5E4] overflow-hidden divide-y divide-[#F5F5F4]">
                 {monthlyExpenses.map((expense) => {
-                  const payerName =
-                    memberMap.get(expense.paid_by) || 'Membre'
+                  const payerName = memberMap.get(expense.paid_by) || 'Membre'
                   const dateFormatted = new Intl.DateTimeFormat('fr-FR', {
-                    day: '2-digit',
+                    day: 'numeric',
                     month: 'short',
                   }).format(new Date(expense.purchased_at))
 
                   return (
                     <div
                       key={expense.id}
-                      className="flex items-center justify-between p-3.5 hover:bg-black/[0.01] transition"
+                      className="flex items-center justify-between p-3.5 hover:bg-[#FFFDF9] transition"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-[#F2F2F7] flex items-center justify-center text-[#007AFF] shrink-0">
-                          <Store className="w-4 h-4" />
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-10 h-10 rounded-2xl bg-[#F97316]/10 text-[#F97316] flex items-center justify-center shrink-0">
+                          <Store className="w-5 h-5 stroke-[2]" />
                         </div>
-                        <div>
-                          <div className="font-semibold text-sm text-[#1C1C1E] leading-snug">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-sm text-[#1C1917] leading-snug truncate">
                             {expense.description || 'Courses'}
                           </div>
-                          <div className="text-[11px] text-[#8E8E93] mt-0.5">
-                            {dateFormatted} • Payé par {payerName}
+                          <div className="text-[11px] text-[#A8A29E] mt-0.5 flex items-center gap-1.5 truncate">
+                            <span>{dateFormatted}</span>
+                            <span>•</span>
+                            <span>Payé par {payerName}</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2.5">
-                        <span className="font-bold text-sm text-[#1C1C1E]">
-                          {formatEuro(expense.amount)}
+                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                        <span className="font-extrabold text-sm text-[#1C1917]">
+                          - {formatEuro(expense.amount)}
                         </span>
                         <button
                           onClick={() => deleteExpense(expense.id)}
                           aria-label="Supprimer la dépense"
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-[#C7C7CC] hover:text-[#FF3B30] active:bg-black/5 transition shrink-0"
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-[#D6D3D1] hover:text-[#EF4444] active:bg-black/5 transition"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -530,87 +656,79 @@ export function BudgetView() {
       )}
 
       {/* ================================================================= */}
-      {/* VUE 2 : BILAN & STATS SUR L'ANNÉE                                 */}
+      {/* VUE 2 : BILAN & STATS ANNUELLES                                   */}
       {/* ================================================================= */}
       {budgetMode === 'year' && (
         <div className="space-y-4">
           {annualLoading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="w-8 h-8 text-[#007AFF] animate-spin" />
+              <Loader2 className="w-7 h-7 text-[#F97316] animate-spin" />
             </div>
           ) : (
             <>
               {/* Hero Card : Total Annuel */}
-              <div className="bg-white rounded-3xl p-6 border border-[#E5E5EA] shadow-xs">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#8E8E93]">
+              <div className="bg-white rounded-2xl p-6 border border-[#E7E5E4] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#A8A29E]">
                     Total dépensé en {selectedYear}
                   </span>
-                  <span className="text-xs font-semibold text-[#8E8E93] bg-[#F2F2F7] px-2.5 py-0.5 rounded-full">
+                  <span className="text-xs font-semibold text-[#78716C] bg-[#F5F5F4] px-2.5 py-0.5 rounded-full">
                     {annualStats.totalTransactions} ticket
                     {annualStats.totalTransactions > 1 ? 's' : ''}
                   </span>
                 </div>
-                <div className="text-4xl font-extrabold text-[#1C1C1E] tracking-tight mt-1">
+                <div className="text-4xl font-extrabold text-[#1C1917] tracking-tight">
                   {formatEuro(annualStats.total)}
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-[#E5E5EA]">
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[#F5F5F4]">
                   <div>
-                    <div className="text-[11px] text-[#8E8E93] font-medium">
+                    <div className="text-[11px] text-[#A8A29E] font-medium">
                       Moyenne mensuelle
                     </div>
-                    <div className="text-base font-bold text-[#1C1C1E] mt-0.5">
+                    <div className="text-base font-bold text-[#1C1917] mt-0.5">
                       {formatEuro(annualStats.averagePerMonth)}
-                      <span className="text-[11px] text-[#8E8E93] font-normal">
-                        {' '}
-                        / mois
-                      </span>
                     </div>
                   </div>
                   <div>
-                    <div className="text-[11px] text-[#8E8E93] font-medium">
+                    <div className="text-[11px] text-[#A8A29E] font-medium">
                       Panier moyen
                     </div>
-                    <div className="text-base font-bold text-[#1C1C1E] mt-0.5">
+                    <div className="text-base font-bold text-[#1C1917] mt-0.5">
                       {formatEuro(annualStats.averagePerExpense)}
-                      <span className="text-[11px] text-[#8E8E93] font-normal">
-                        {' '}
-                        / ticket
-                      </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Quick Insights Cards */}
+              {/* Record Cards */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white rounded-2xl p-3.5 border border-[#E5E5EA] shadow-2xs">
-                  <div className="flex items-center gap-1.5 text-[#FF9500] text-[11px] font-bold uppercase tracking-wider mb-1">
+                <div className="bg-white rounded-2xl p-3.5 border border-[#E7E5E4]">
+                  <div className="flex items-center gap-1.5 text-[#F97316] text-[11px] font-bold uppercase tracking-wider mb-1">
                     <TrendingUp className="w-3.5 h-3.5" />
                     <span>Mois record</span>
                   </div>
-                  <div className="text-sm font-bold text-[#1C1C1E]">
+                  <div className="text-sm font-bold text-[#1C1917]">
                     {annualStats.maxMonth && annualStats.maxMonth.total > 0
                       ? annualStats.maxMonth.name
                       : 'Aucun'}
                   </div>
-                  <div className="text-xs font-semibold text-[#8E8E93] mt-0.5">
+                  <div className="text-xs font-semibold text-[#78716C] mt-0.5">
                     {annualStats.maxMonth && annualStats.maxMonth.total > 0
                       ? formatEuro(annualStats.maxMonth.total)
                       : '0,00 €'}
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-3.5 border border-[#E5E5EA] shadow-2xs">
-                  <div className="flex items-center gap-1.5 text-[#34C759] text-[11px] font-bold uppercase tracking-wider mb-1">
+                <div className="bg-white rounded-2xl p-3.5 border border-[#E7E5E4]">
+                  <div className="flex items-center gap-1.5 text-[#22C55E] text-[11px] font-bold uppercase tracking-wider mb-1">
                     <Award className="w-3.5 h-3.5" />
                     <span>Mois le plus sobre</span>
                   </div>
-                  <div className="text-sm font-bold text-[#1C1C1E]">
+                  <div className="text-sm font-bold text-[#1C1917]">
                     {annualStats.minMonth ? annualStats.minMonth.name : 'Aucun'}
                   </div>
-                  <div className="text-xs font-semibold text-[#8E8E93] mt-0.5">
+                  <div className="text-xs font-semibold text-[#78716C] mt-0.5">
                     {annualStats.minMonth
                       ? formatEuro(annualStats.minMonth.total)
                       : '0,00 €'}
@@ -618,28 +736,24 @@ export function BudgetView() {
                 </div>
               </div>
 
-              {/* ======================================================== */}
-              {/* GRAPHIQUE INTERACTIF DES 12 MOIS                         */}
-              {/* ======================================================== */}
-              <div className="bg-white rounded-3xl p-5 border border-[#E5E5EA] shadow-xs space-y-3">
+              {/* Graphique interactif des 12 mois */}
+              <div className="bg-white rounded-2xl p-5 border border-[#E7E5E4] space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[#8E8E93]">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#A8A29E]">
                     Évolution mensuelle
                   </div>
-                  <div className="text-[11px] font-medium text-[#8E8E93] flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-[#007AFF]" />
+                  <div className="text-[11px] font-medium text-[#A8A29E] flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-[#F97316]" />
                     <span>Moyenne: {formatEuro(annualStats.averagePerMonth)}</span>
                   </div>
                 </div>
 
-                {/* Graphique à barres mobile design */}
                 <div className="pt-4 pb-1">
-                  <div className="h-44 flex items-end justify-between gap-1 sm:gap-2 px-1 relative">
-                    {/* Ligne repère de la moyenne */}
+                  <div className="h-44 flex items-end justify-between gap-1 px-1 relative">
                     {annualStats.maxChartValue > 0 &&
                       annualStats.averagePerMonth > 0 && (
                         <div
-                          className="absolute left-0 right-0 border-b border-dashed border-[#007AFF]/40 pointer-events-none z-10 transition-all duration-300"
+                          className="absolute left-0 right-0 border-b border-dashed border-[#F97316]/40 pointer-events-none z-10 transition-all duration-300"
                           style={{
                             bottom: `${Math.min(
                               92,
@@ -661,7 +775,7 @@ export function BudgetView() {
                       const heightPercent =
                         annualStats.maxChartValue > 0 && m.total > 0
                           ? Math.max(10, (m.total / annualStats.maxChartValue) * 100)
-                          : 4 // hauteur minimale pour les mois à 0€
+                          : 4
 
                       return (
                         <button
@@ -670,28 +784,26 @@ export function BudgetView() {
                           onClick={() => setSelectedChartMonth(m.index)}
                           className="flex-1 flex flex-col items-center h-full justify-end group focus:outline-none cursor-pointer"
                         >
-                          {/* Barre verticale */}
-                          <div className="w-full max-w-[24px] h-full flex items-end">
+                          <div className="w-full max-w-[22px] h-full flex items-end">
                             <div
                               className={`w-full rounded-t-lg transition-all duration-300 ${
                                 isSelected
-                                  ? 'bg-[#007AFF] shadow-sm'
+                                  ? 'bg-[#F97316]'
                                   : isHighest
-                                  ? 'bg-[#5856D6]/90 group-hover:bg-[#5856D6]'
+                                  ? 'bg-[#F97316]/70 group-hover:bg-[#F97316]'
                                   : m.total > 0
-                                  ? 'bg-[#007AFF]/35 group-hover:bg-[#007AFF]/60'
-                                  : 'bg-[#E5E5EA]/50'
+                                  ? 'bg-[#F97316]/25 group-hover:bg-[#F97316]/50'
+                                  : 'bg-[#E7E5E4]/50'
                               }`}
                               style={{ height: `${heightPercent}%` }}
                             />
                           </div>
 
-                          {/* Libellé du mois */}
                           <span
                             className={`text-[10px] mt-2 font-medium transition ${
                               isSelected
-                                ? 'text-[#007AFF] font-bold scale-105'
-                                : 'text-[#8E8E93]'
+                                ? 'text-[#F97316] font-bold scale-105'
+                                : 'text-[#A8A29E]'
                             }`}
                           >
                             {m.shortName}
@@ -702,34 +814,27 @@ export function BudgetView() {
                   </div>
                 </div>
 
-                {/* Callout interactif sur le mois cliqué */}
                 {selectedChartMonth !== null && (
-                  <div className="bg-[#F2F2F7] rounded-2xl p-3 flex items-center justify-between gap-3 animate-in fade-in duration-200">
+                  <div className="bg-[#FFFDF9] rounded-2xl p-3 flex items-center justify-between gap-3 animate-in fade-in duration-200">
                     <div>
-                      <div className="text-xs font-bold text-[#1C1C1E]">
+                      <div className="text-xs font-bold text-[#1C1917]">
                         {annualStats.months[selectedChartMonth].name} {selectedYear}
                       </div>
-                      <div className="text-[11px] text-[#8E8E93] mt-0.5">
+                      <div className="text-[11px] text-[#78716C] mt-0.5">
                         {annualStats.months[selectedChartMonth].count} dépense
-                        {annualStats.months[selectedChartMonth].count > 1 ? 's' : ''} •{' '}
-                        {annualStats.months[selectedChartMonth].total >
-                        annualStats.averagePerMonth
-                          ? 'Au-dessus de la moyenne'
-                          : 'En-dessous de la moyenne'}
+                        {annualStats.months[selectedChartMonth].count > 1 ? 's' : ''}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <div className="text-right">
-                        <div className="text-sm font-extrabold text-[#1C1C1E]">
-                          {formatEuro(annualStats.months[selectedChartMonth].total)}
-                        </div>
+                      <div className="text-sm font-extrabold text-[#1C1917]">
+                        {formatEuro(annualStats.months[selectedChartMonth].total)}
                       </div>
                       <button
                         onClick={() => jumpToMonth(selectedChartMonth)}
-                        className="px-2.5 py-1.5 rounded-xl bg-white text-[#007AFF] text-xs font-semibold hover:bg-[#007AFF] hover:text-white transition shadow-2xs flex items-center gap-1"
+                        className="px-2.5 py-1.5 rounded-xl bg-white text-[#F97316] text-xs font-bold hover:bg-[#F97316] hover:text-white transition flex items-center gap-1 border border-[#E7E5E4]"
                       >
-                        <span>Détail</span>
+                        <span>Voir</span>
                         <ArrowRight className="w-3 h-3" />
                       </button>
                     </div>
@@ -738,20 +843,14 @@ export function BudgetView() {
               </div>
 
               {/* Répartition Annuelle par Membre */}
-              <div className="bg-white rounded-3xl p-5 border border-[#E5E5EA] shadow-xs space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[#8E8E93]">
-                    Participation annuelle
-                  </div>
-                  <span className="text-[11px] text-[#8E8E93] font-medium">
-                    Sur l&apos;année entière
-                  </span>
+              <div className="bg-white rounded-2xl p-5 border border-[#E7E5E4] space-y-4">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[#A8A29E]">
+                  Participation annuelle
                 </div>
 
                 <div className="space-y-4">
                   {members.map((m, idx) => {
-                    const memberTotal =
-                      annualStats.memberTotals[m.user_id] || 0
+                    const memberTotal = annualStats.memberTotals[m.user_id] || 0
                     const percentage =
                       annualStats.total > 0
                         ? Math.round((memberTotal / annualStats.total) * 100)
@@ -763,28 +862,27 @@ export function BudgetView() {
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2">
                             <div
-                              className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-2xs"
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
                               style={{ backgroundColor: color }}
                             >
                               {(m.user?.name || 'M').charAt(0).toUpperCase()}
                             </div>
-                            <span className="font-semibold text-[#1C1C1E] text-xs">
+                            <span className="font-semibold text-[#1C1917] text-xs">
                               {m.user?.name || 'Membre'}
                             </span>
                           </div>
 
                           <div className="text-right flex items-baseline gap-2">
-                            <span className="font-bold text-[#1C1C1E] text-sm">
+                            <span className="font-bold text-[#1C1917] text-sm">
                               {formatEuro(memberTotal)}
                             </span>
-                            <span className="text-xs text-[#8E8E93] font-semibold">
+                            <span className="text-xs text-[#A8A29E] font-semibold">
                               {percentage}%
                             </span>
                           </div>
                         </div>
 
-                        {/* Progress bar native iOS style */}
-                        <div className="w-full h-2.5 bg-[#F2F2F7] rounded-full overflow-hidden">
+                        <div className="w-full h-2 bg-[#F5F5F4] rounded-full overflow-hidden">
                           <div
                             className="h-full rounded-full transition-all duration-500"
                             style={{
@@ -801,15 +899,15 @@ export function BudgetView() {
 
               {/* Top Enseignes de l'année */}
               {annualStats.topStores.length > 0 && (
-                <div className="bg-white rounded-3xl p-5 border border-[#E5E5EA] shadow-xs space-y-3">
+                <div className="bg-white rounded-2xl p-5 border border-[#E7E5E4] space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="text-[11px] font-semibold uppercase tracking-wider text-[#8E8E93]">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-[#A8A29E]">
                       Lieux de courses fréquents
                     </div>
-                    <ShoppingBag className="w-4 h-4 text-[#8E8E93]" />
+                    <ShoppingBag className="w-4 h-4 text-[#A8A29E]" />
                   </div>
 
-                  <div className="divide-y divide-[#E5E5EA]">
+                  <div className="divide-y divide-[#F5F5F4]">
                     {annualStats.topStores.map((store, i) => {
                       const percentOfAnnual =
                         annualStats.total > 0
@@ -822,21 +920,21 @@ export function BudgetView() {
                           className="py-2.5 flex items-center justify-between first:pt-1 last:pb-1"
                         >
                           <div className="flex items-center gap-2.5">
-                            <div className="w-6 h-6 rounded-lg bg-[#F2F2F7] text-[#1C1C1E] font-bold text-[11px] flex items-center justify-center">
-                              #{i + 1}
+                            <div className="w-8 h-8 rounded-xl bg-[#F97316]/10 text-[#F97316] flex items-center justify-center shrink-0">
+                              <Store className="w-4 h-4 stroke-[2]" />
                             </div>
                             <div>
-                              <div className="text-xs font-bold text-[#1C1C1E]">
+                              <div className="text-xs font-bold text-[#1C1917]">
                                 {store.name}
                               </div>
-                              <div className="text-[10px] text-[#8E8E93]">
+                              <div className="text-[10px] text-[#A8A29E]">
                                 {store.count} passage{store.count > 1 ? 's' : ''}{' '}
                                 • {percentOfAnnual}% du budget
                               </div>
                             </div>
                           </div>
 
-                          <div className="text-xs font-bold text-[#1C1C1E]">
+                          <div className="text-xs font-bold text-[#1C1917]">
                             {formatEuro(store.total)}
                           </div>
                         </div>
@@ -847,12 +945,12 @@ export function BudgetView() {
               )}
 
               {/* Tableau Récapitulatif Mois par Mois */}
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-[#8E8E93] mb-2 px-1">
+              <div className="space-y-1.5">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[#A8A29E] px-1">
                   Bilan mois par mois
                 </div>
 
-                <div className="bg-white rounded-2xl border border-[#E5E5EA] shadow-xs overflow-hidden divide-y divide-[#E5E5EA]">
+                <div className="bg-white rounded-2xl border border-[#E7E5E4] overflow-hidden divide-y divide-[#F5F5F4]">
                   {annualStats.months.map((m) => {
                     const isRecord =
                       annualStats.maxMonth &&
@@ -863,28 +961,28 @@ export function BudgetView() {
                       <div
                         key={m.index}
                         onClick={() => jumpToMonth(m.index)}
-                        className="p-3.5 flex items-center justify-between hover:bg-black/[0.01] active:bg-[#F2F2F7] transition cursor-pointer"
+                        className="p-3.5 flex items-center justify-between hover:bg-[#FFFDF9] active:bg-[#F5F5F4] transition cursor-pointer"
                       >
                         <div className="flex items-center gap-3">
                           <div
                             className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${
                               m.total > 0
-                                ? 'bg-[#007AFF]/10 text-[#007AFF]'
-                                : 'bg-[#F2F2F7] text-[#8E8E93]'
+                                ? 'bg-[#F97316]/10 text-[#F97316]'
+                                : 'bg-[#F5F5F4] text-[#A8A29E]'
                             }`}
                           >
                             {m.shortName}
                           </div>
                           <div>
-                            <div className="font-semibold text-sm text-[#1C1C1E] flex items-center gap-1.5">
+                            <div className="font-semibold text-sm text-[#1C1917] flex items-center gap-1.5">
                               <span>{m.name}</span>
                               {isRecord && (
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#FF9500]/10 text-[#FF9500]">
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#F97316]/10 text-[#F97316]">
                                   Pic
                                 </span>
                               )}
                             </div>
-                            <div className="text-[11px] text-[#8E8E93] mt-0.5">
+                            <div className="text-[11px] text-[#A8A29E] mt-0.5">
                               {m.count} dépense{m.count > 1 ? 's' : ''}
                             </div>
                           </div>
@@ -893,12 +991,12 @@ export function BudgetView() {
                         <div className="flex items-center gap-2">
                           <span
                             className={`font-bold text-sm ${
-                              m.total > 0 ? 'text-[#1C1C1E]' : 'text-[#8E8E93]'
+                              m.total > 0 ? 'text-[#1C1917]' : 'text-[#A8A29E]'
                             }`}
                           >
                             {formatEuro(m.total)}
                           </span>
-                          <ChevronRight className="w-4 h-4 text-[#C7C7CC]" />
+                          <ChevronRight className="w-4 h-4 text-[#D6D3D1]" />
                         </div>
                       </div>
                     )

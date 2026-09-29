@@ -29,7 +29,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#F2F2F7",
+  themeColor: "#FFFDF9",
 };
 
 export default function RootLayout({
@@ -39,7 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-[#F2F2F7] text-[#1C1C1E]">
+      <body className="min-h-full flex flex-col bg-[#FFFDF9] text-[#1C1917]">
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

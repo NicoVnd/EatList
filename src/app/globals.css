@@ -2,21 +2,24 @@
 
 :root {
   --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
-  --bg-system: #F2F2F7;
-  --bg-card: #FFFFFF;
-  --separator: #E5E5EA;
-  --label-primary: #1C1C1E;
-  --label-secondary: #8E8E93;
-  --label-tertiary: #C7C7CC;
-  --tint-blue: #007AFF;
-  --tint-emerald: #34C759;
-  --tint-orange: #FF9500;
-  --tint-purple: #AF52DE;
+
+  /* Warm palette */
+  --color-primary: #F97316;
+  --color-primary-light: #FDBA74;
+  --color-bg: #FFFDF9;
+  --color-surface: #FFFFFF;
+  --color-text: #1C1917;
+  --color-text-secondary: #78716C;
+  --color-text-tertiary: #A8A29E;
+  --color-separator: #F5F5F4;
+  --color-border: #E7E5E4;
+  --color-green: #22C55E;
+  --color-red: #EF4444;
 }
 
 html, body {
-  background-color: var(--bg-system);
-  color: var(--label-primary);
+  background-color: var(--color-bg);
+  color: var(--color-text);
   font-family: var(--font-system);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -25,29 +28,24 @@ html, body {
   overscroll-behavior-y: none;
 }
 
-/* Safe areas for iPhone notch & home indicator */
+/* Safe areas for iPhone notch & home indicator (0px fallback on desktop/web) */
 .pb-safe {
-  padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .pt-safe {
-  padding-top: max(env(safe-area-inset-top, 16px), 16px);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* Tab bar height offset */
 .tabbar-offset {
-  padding-bottom: calc(64px + max(env(safe-area-inset-bottom, 16px), 16px));
+  padding-bottom: 68px;
 }
 
-/* iOS active tap feedback */
-button:active:not(:disabled), .ios-press:active {
+/* Subtle tap feedback */
+button:active:not(:disabled), .tap-feedback:active {
   transform: scale(0.97);
   opacity: 0.85;
-}
-
-/* iOS grouped table separator */
-.ios-separator {
-  border-color: #E5E5EA;
 }
 
 /* Hide scrollbars cleanly */

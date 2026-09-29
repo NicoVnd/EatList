@@ -11,84 +11,82 @@ interface BottomNavProps {
   shoppingItemsCount?: number
 }
 
+interface NavItem {
+  id: TabType
+  label: string
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
+  badgeCount?: number
+}
+
 export function BottomNav({
   currentTab,
   onTabChange,
   shoppingItemsCount = 0,
 }: BottomNavProps) {
+  const navItems: NavItem[] = [
+    {
+      id: 'meals',
+      label: 'Menus',
+      icon: Utensils,
+    },
+    {
+      id: 'shopping',
+      label: 'Courses',
+      icon: ShoppingBag,
+      badgeCount: shoppingItemsCount,
+    },
+    {
+      id: 'expense',
+      label: 'Dépense',
+      icon: PlusCircle,
+    },
+    {
+      id: 'budget',
+      label: 'Budget',
+      icon: PieChart,
+    },
+  ]
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#FFFFFF]/90 backdrop-blur-2xl border-t border-[#E5E5EA] pb-safe">
-      <div className="max-w-md mx-auto h-[50px] px-4 flex items-center justify-around">
-        {/* Onglet Menus (Planning & Idées) */}
-        <button
-          onClick={() => onTabChange('meals')}
-          className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1 transition-colors select-none ${
-            currentTab === 'meals'
-              ? 'text-[#007AFF]'
-              : 'text-[#8E8E93] hover:text-[#1C1C1E]'
-          }`}
-        >
-          <Utensils
-            className="w-[21px] h-[21px]"
-            strokeWidth={currentTab === 'meals' ? 2.4 : 1.8}
-          />
-          <span className="text-[10px] font-medium tracking-tight">Menus</span>
-        </button>
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-[#E7E5E4]">
+      <div className="max-w-md w-full mx-auto h-[52px] grid grid-cols-4 items-center">
+        {navItems.map((item) => {
+          const isActive = currentTab === item.id
+          const Icon = item.icon
 
-        {/* Onglet Courses */}
-        <button
-          onClick={() => onTabChange('shopping')}
-          className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1 transition-colors select-none ${
-            currentTab === 'shopping'
-              ? 'text-[#007AFF]'
-              : 'text-[#8E8E93] hover:text-[#1C1C1E]'
-          }`}
-        >
-          <div className="relative">
-            <ShoppingBag
-              className="w-[21px] h-[21px]"
-              strokeWidth={currentTab === 'shopping' ? 2.4 : 1.8}
-            />
-            {shoppingItemsCount > 0 && (
-              <span className="absolute -top-1 -right-2 bg-[#FF3B30] text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full min-w-3.5 text-center leading-tight shadow-xs">
-                {shoppingItemsCount}
+          return (
+            <button
+              key={item.id}
+              onClick={() => onTabChange(item.id)}
+              className={`h-full flex flex-col items-center justify-center transition-colors select-none group focus:outline-none ${
+                isActive
+                  ? 'text-[#F97316]'
+                  : 'text-[#A8A29E] hover:text-[#1C1917]'
+              }`}
+            >
+              <div className="w-5 h-5 flex items-center justify-center relative">
+                <Icon
+                  className="w-5 h-5 transition-transform group-active:scale-90"
+                  strokeWidth={isActive ? 2.4 : 1.7}
+                />
+
+                {typeof item.badgeCount === 'number' && item.badgeCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2.5 bg-[#F97316] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full min-w-4 text-center leading-none pointer-events-none">
+                    {item.badgeCount}
+                  </span>
+                )}
+              </div>
+
+              <span
+                className={`text-[10px] tracking-tight leading-none mt-1 transition-all ${
+                  isActive ? 'font-bold' : 'font-medium'
+                }`}
+              >
+                {item.label}
               </span>
-            )}
-          </div>
-          <span className="text-[10px] font-medium tracking-tight">Courses</span>
-        </button>
-
-        {/* Onglet Dépense */}
-        <button
-          onClick={() => onTabChange('expense')}
-          className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1 transition-colors select-none ${
-            currentTab === 'expense'
-              ? 'text-[#007AFF]'
-              : 'text-[#8E8E93] hover:text-[#1C1C1E]'
-          }`}
-        >
-          <PlusCircle
-            className="w-[22px] h-[22px]"
-            strokeWidth={currentTab === 'expense' ? 2.4 : 1.8}
-          />
-          <span className="text-[10px] font-medium tracking-tight">Dépense</span>
-        </button>
-
-        {/* Onglet Budget */}
-        <button
-          onClick={() => onTabChange('budget')}
-          className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1 transition-colors select-none ${
-            currentTab === 'budget'
-              ? 'text-[#007AFF]'
-              : 'text-[#8E8E93] hover:text-[#1C1C1E]'
-          }`}
-        >
-          <PieChart
-            className="w-[21px] h-[21px]"
-            strokeWidth={currentTab === 'budget' ? 2.4 : 1.8}
-          />
-          <span className="text-[10px] font-medium tracking-tight">Budget</span>
-        </button>
+            </button>
+          )
+        })}
       </div>
     </nav>
   )
