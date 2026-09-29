@@ -39,7 +39,7 @@ html, body {
 
 /* Tab bar height offset */
 .tabbar-offset {
-  padding-bottom: 68px;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Subtle tap feedback */

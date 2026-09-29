@@ -4,13 +4,13 @@
   "description": "Gestion collaborative des repas, des courses et du budget du foyer",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F2F2F7",
-  "theme_color": "#F2F2F7",
+  "background_color": "#FFFDF9",
+  "theme_color": "#FFFDF9",
   "icons": [
     {
-      "src": "/favicon.svg",
+      "src": "/icon.png",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/png"
     },
     {
       "src": "/icon-192.png",
