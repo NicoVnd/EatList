@@ -37,13 +37,10 @@ html, body {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* Bottom navigation bar — compact 48px content + safe area */
+/* Bottom navigation bar — icons centered across full bar including safe area */
 .bottom-nav {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-.bottom-nav-inner {
-  height: 48px;
+  padding-top: 6px;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Tab bar height offset for content above the nav */
