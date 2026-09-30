@@ -37,9 +37,18 @@ html, body {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* Tab bar height offset */
+/* Bottom navigation bar — compact 48px content + safe area */
+.bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.bottom-nav-inner {
+  height: 48px;
+}
+
+/* Tab bar height offset for content above the nav */
 .tabbar-offset {
-  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Subtle tap feedback */
