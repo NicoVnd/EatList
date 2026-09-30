@@ -37,15 +37,28 @@ html, body {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* Bottom navigation bar — icons centered across full bar including safe area */
+/* Bottom navigation bar */
 .bottom-nav {
   padding-top: 6px;
-  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: 6px;
+}
+
+/* In PWA standalone mode, the safe-area adds ~34px which makes the bar huge.
+   We halve it — the home indicator renders fine over the white background. */
+@media (display-mode: standalone) {
+  .bottom-nav {
+    padding-top: 4px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) / 2);
+  }
+
+  .tabbar-offset {
+    padding-bottom: calc(44px + env(safe-area-inset-bottom, 0px) / 2);
+  }
 }
 
 /* Tab bar height offset for content above the nav */
 .tabbar-offset {
-  padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: 48px;
 }
 
 /* Subtle tap feedback */
