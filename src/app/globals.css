@@ -37,9 +37,10 @@ html, body {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* Keep navigation controls above the iPhone home indicator in Safari and PWA. */
+/* Share the home-indicator inset above and below the controls for visual balance. */
 .bottom-nav {
-  padding: 6px max(8px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+  --nav-vertical-inset: max(8px, calc(env(safe-area-inset-bottom, 0px) / 2));
+  padding: var(--nav-vertical-inset) max(8px, env(safe-area-inset-right, 0px)) var(--nav-vertical-inset) max(8px, env(safe-area-inset-left, 0px));
 }
 
 .tabbar-offset {

@@ -406,14 +406,16 @@ export function ShoppingView() {
                         >
                           <div
                             onClick={() => toggleItem(item)}
-                            className="flex items-center gap-3.5 flex-1 cursor-pointer select-none min-w-0"
+                            className="flex items-center gap-2 flex-1 cursor-pointer select-none min-w-0"
                           >
                             {/* Checkbox ronde */}
                             <button
                               type="button"
                               aria-label="Cocher l'article"
-                              className="w-[22px] h-[22px] rounded-full border-[1.8px] border-[#D6D3D1] hover:border-[#F97316] active:scale-90 flex items-center justify-center transition shrink-0 bg-white"
-                            />
+                              className="shopping-checkbox w-11 h-11 flex items-center justify-center shrink-0 group"
+                            >
+                              <span className="w-[22px] h-[22px] rounded-full border-[1.8px] border-[#D6D3D1] group-hover:border-[#F97316] bg-white" />
+                            </button>
 
                             <div className="min-w-0 flex-1">
                               <span className="text-[15px] font-semibold text-[#1C1917] leading-snug truncate block">
@@ -458,14 +460,16 @@ export function ShoppingView() {
                   >
                     <div
                       onClick={() => toggleItem(item)}
-                      className="flex items-center gap-3.5 flex-1 cursor-pointer select-none min-w-0"
+                      className="flex items-center gap-2 flex-1 cursor-pointer select-none min-w-0"
                     >
                       {/* Checkbox ronde */}
                       <button
                         type="button"
                         aria-label="Cocher l'article"
-                        className="w-[22px] h-[22px] rounded-full border-[1.8px] border-[#D6D3D1] hover:border-[#F97316] active:scale-90 flex items-center justify-center transition shrink-0 bg-white"
-                      />
+                        className="shopping-checkbox w-11 h-11 flex items-center justify-center shrink-0 group"
+                      >
+                        <span className="w-[22px] h-[22px] rounded-full border-[1.8px] border-[#D6D3D1] group-hover:border-[#F97316] bg-white" />
+                      </button>
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
@@ -522,11 +526,13 @@ export function ShoppingView() {
                     >
                       <div
                         onClick={() => toggleItem(item)}
-                        className="flex items-center gap-3.5 flex-1 cursor-pointer select-none min-w-0"
+                        className="flex items-center gap-2 flex-1 cursor-pointer select-none min-w-0"
                       >
                         {/* Checkbox verte remplie */}
-                        <div className="w-[22px] h-[22px] rounded-full bg-[#22C55E] text-white flex items-center justify-center shrink-0">
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        <div className="w-11 h-11 flex items-center justify-center shrink-0">
+                          <div className="w-[22px] h-[22px] rounded-full bg-[#22C55E] text-white flex items-center justify-center shrink-0">
+                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          </div>
                         </div>
 
                         <span className="line-through text-sm text-[#A8A29E] font-medium truncate">
