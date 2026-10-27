@@ -3,11 +3,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Expense } from '@/types/app'
+import { AddExpenseView } from '@/components/expenses/AddExpenseView'
 import { useHousehold } from '@/context/HouseholdContext'
 import {
   ChevronLeft,
   ChevronRight,
   Trash2,
+  Pencil,
   PieChart,
   Loader2,
   Calendar,
@@ -54,6 +56,7 @@ const MONTH_SHORT_FR = [
 export function BudgetView() {
   const { household, members } = useHousehold()
   const supabase = createClient()
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
 
   // Mode d'affichage : Mois ou Année
   const [budgetMode, setBudgetMode] = useState<'month' | 'year'>('month')
@@ -115,8 +118,8 @@ export function BudgetView() {
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth()
 
-    const startDate = new Date(year, month, 1).toISOString().split('T')[0]
-    const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0]
+    const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`
+    const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${new Date(year, month + 1, 0).getDate()}`
 
     try {
       const { data, error } = await supabase
@@ -142,6 +145,7 @@ export function BudgetView() {
   }, [fetchMonthlyExpenses])
 
   const deleteExpense = async (id: string) => {
+    if (!window.confirm('Supprimer cette dépense définitivement ?')) return
     setMonthlyExpenses((prev) => prev.filter((e) => e.id !== id))
     setAnnualExpenses((prev) => prev.filter((e) => e.id !== id))
     try {
@@ -309,6 +313,16 @@ export function BudgetView() {
   const jumpToMonth = (monthIndex: number) => {
     setCurrentDate(new Date(selectedYear, monthIndex, 1))
     setBudgetMode('month')
+  }
+
+  if (editingExpense) {
+    return <AddExpenseView key={editingExpense.id} expense={editingExpense}
+      onCancel={() => setEditingExpense(null)}
+      onSuccess={() => {
+        setEditingExpense(null)
+        void fetchMonthlyExpenses()
+        void fetchAnnualExpenses()
+      }} />
   }
 
   return (
@@ -569,7 +583,7 @@ export function BudgetView() {
                   return (
                     <div
                       key={expense.id}
-                      className="flex items-center justify-between p-3.5 hover:bg-[#FFFDF9] transition"
+                      className="expense-row flex items-center justify-between p-3.5 hover:bg-[#FFFDF9] transition"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className="w-10 h-10 rounded-2xl bg-[#F97316]/10 text-[#F97316] flex items-center justify-center shrink-0">
@@ -579,7 +593,7 @@ export function BudgetView() {
                           <div className="font-bold text-sm text-[#1C1917] leading-snug truncate">
                             {expense.description || 'Courses'}
                           </div>
-                          <div className="text-[11px] text-[#A8A29E] mt-0.5 flex items-center gap-1.5 truncate">
+                          <div className="text-xs text-[#78716C] mt-0.5 flex flex-wrap items-center gap-x-1.5">
                             <span>{dateFormatted}</span>
                             <span>•</span>
                             <span>Payé par {payerName}</span>
@@ -587,14 +601,19 @@ export function BudgetView() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                      <div className="expense-actions flex items-center gap-1 shrink-0 ml-3">
                         <span className="font-extrabold text-sm text-[#1C1917]">
                           - {formatEuro(expense.amount)}
                         </span>
+                        <button type="button" onClick={() => { setEditingExpense(expense); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                          aria-label={`Modifier la dépense ${expense.description || 'Courses'}`}
+                          className="w-11 h-11 rounded-full flex items-center justify-center text-[#F97316] active:bg-[#F97316]/10 transition">
+                          <Pencil className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => deleteExpense(expense.id)}
                           aria-label="Supprimer la dépense"
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-[#D6D3D1] hover:text-[#EF4444] active:bg-black/5 transition"
+                          className="w-11 h-11 rounded-full flex items-center justify-center text-[#A8A29E] hover:text-[#EF4444] active:bg-black/5 transition"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

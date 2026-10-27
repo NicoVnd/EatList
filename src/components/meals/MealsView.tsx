@@ -807,7 +807,7 @@ export function MealsView() {
             className="fixed inset-0 bg-black/40 backdrop-blur-xs"
             onClick={() => setEditingDay(null)}
           />
-          <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-lg z-10 space-y-4 animate-in slide-in-from-bottom duration-200">
+          <div className="mobile-sheet relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-lg z-10 space-y-4 animate-in slide-in-from-bottom duration-200">
             <div className="w-9 h-1 rounded-full bg-[#D6D3D1] mx-auto -mt-2 mb-2 sm:hidden" />
 
             <div className="flex items-center justify-between">
@@ -897,7 +897,7 @@ export function MealsView() {
             className="fixed inset-0 bg-black/40 backdrop-blur-xs"
             onClick={() => setAssigningIdea(null)}
           />
-          <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-lg z-10 space-y-4 animate-in slide-in-from-bottom duration-200">
+          <div className="mobile-sheet relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-lg z-10 space-y-4 animate-in slide-in-from-bottom duration-200">
             <div className="w-9 h-1 rounded-full bg-[#D6D3D1] mx-auto -mt-2 mb-2 sm:hidden" />
 
             <div className="flex items-center justify-between">

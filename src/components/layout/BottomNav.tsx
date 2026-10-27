@@ -48,7 +48,7 @@ export function BottomNav({
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-[#E7E5E4] bottom-nav">
+    <nav aria-label="Navigation principale" className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-[#E7E5E4] bottom-nav">
       <div className="max-w-md w-full mx-auto flex items-center justify-around">
         {navItems.map((item) => {
           const isActive = currentTab === item.id
@@ -57,8 +57,9 @@ export function BottomNav({
           return (
             <button
               key={item.id}
+              aria-current={isActive ? 'page' : undefined}
               onClick={() => onTabChange(item.id)}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors select-none group focus:outline-none ${
+              className={`min-h-12 flex-1 flex flex-col items-center justify-center gap-1 transition-colors select-none group ${
                 isActive
                   ? 'text-[#F97316]'
                   : 'text-[#A8A29E] hover:text-[#1C1917]'

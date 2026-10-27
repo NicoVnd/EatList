@@ -37,28 +37,60 @@ html, body {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* Bottom navigation bar */
+/* Keep navigation controls above the iPhone home indicator in Safari and PWA. */
 .bottom-nav {
-  padding-top: 6px;
-  padding-bottom: 6px;
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
 }
 
-/* In PWA standalone mode, the safe-area adds ~34px which makes the bar huge.
-   We halve it — the home indicator renders fine over the white background. */
-@media (display-mode: standalone) {
-  .bottom-nav {
-    padding-top: 10px;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) / 2);
-  }
-
-  .tabbar-offset {
-    padding-bottom: calc(44px + env(safe-area-inset-bottom, 0px) / 2);
-  }
-}
-
-/* Tab bar height offset for content above the nav */
 .tabbar-offset {
-  padding-bottom: 48px;
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: calc(72px + env(safe-area-inset-top, 0px));
+  scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+}
+
+body { min-height: 100dvh; }
+main { min-width: 0; }
+input, textarea, select { scroll-margin-block: 100px; }
+button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+
+.mobile-sheet {
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+}
+
+@media (pointer: coarse) {
+  /* 16px prevents Safari from zooming the page when a field receives focus. */
+  input:not([type="checkbox"]):not([type="radio"]):not([inputmode="decimal"]), textarea, select {
+    font-size: 16px;
+    min-width: 0;
+    max-width: 100%;
+  }
+  button { min-height: 44px; }
+  button:has(> svg:only-child) { min-width: 44px; flex-shrink: 0; }
+  input[type="date"] { min-height: 44px; }
+}
+
+@media (max-width: 430px) {
+  .expense-row { flex-wrap: wrap; gap: 4px; }
+  .expense-actions { width: 100%; margin-left: 0; justify-content: flex-end; }
+  .expense-actions > span { margin-right: auto; padding-left: 52px; }
+}
+
+@media (max-width: 639px) {
+  .mobile-sheet { padding-inline: 20px; }
+  header { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 
 /* Subtle tap feedback */

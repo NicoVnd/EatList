@@ -616,7 +616,7 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
             className="fixed inset-0 bg-stone-900/40 backdrop-blur-xs"
             onClick={() => setIsCreating(false)}
           />
-          <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl z-10 space-y-4 max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+          <div className="mobile-sheet relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl z-10 space-y-4 max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
             <div className="w-9 h-1 rounded-full bg-stone-300 mx-auto -mt-2 mb-2 sm:hidden" />
 
             <div className="flex items-center justify-between">
@@ -826,7 +826,7 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
             className="fixed inset-0 bg-stone-900/40 backdrop-blur-xs"
             onClick={() => setActiveRecipe(null)}
           />
-          <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl z-10 space-y-5 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+          <div className="mobile-sheet relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl z-10 space-y-5 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
             <div className="w-9 h-1 rounded-full bg-stone-300 mx-auto -mt-2 mb-2 sm:hidden" />
 
             <div className="flex items-start justify-between gap-3">

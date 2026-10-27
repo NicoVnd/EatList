@@ -4,58 +4,70 @@ import React, { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useHousehold } from '@/context/HouseholdContext'
 import { useAuth } from '@/context/AuthContext'
+import type { Expense } from '@/types/app'
 import {
   Check,
   Loader2,
   Calendar,
   Store,
   CreditCard,
-  Sparkles,
+  ArrowLeft,
 } from 'lucide-react'
 
 interface AddExpenseViewProps {
   onSuccess: () => void
+  expense?: Expense
+  onCancel?: () => void
 }
 
 const quickStores = ['Intermarché', 'Grand Frais', 'Auchan', 'Lidl', 'Action']
 
-export function AddExpenseView({ onSuccess }: AddExpenseViewProps) {
+export function AddExpenseView({ onSuccess, expense, onCancel }: AddExpenseViewProps) {
   const { household, members } = useHousehold()
   const { user } = useAuth()
   const supabase = createClient()
 
-  const today = new Date().toISOString().split('T')[0]
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
-  const [amount, setAmount] = useState('')
-  const [paidBy, setPaidBy] = useState(user?.id || '')
-  const [purchasedAt, setPurchasedAt] = useState(today)
-  const [description, setDescription] = useState('')
+  const [amount, setAmount] = useState(expense ? String(expense.amount) : '')
+  const [paidBy, setPaidBy] = useState(expense?.paid_by || user?.id || '')
+  const [purchasedAt, setPurchasedAt] = useState(expense?.purchased_at || today)
+  const [description, setDescription] = useState(expense?.description || '')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!amount || !household || !paidBy) return
+    if (loading || success || !amount || !household || !paidBy) return
+    if (expense && expense.household_id !== household.id) {
+      setError('Cette dépense appartient à un autre foyer. Revenez au budget.')
+      return
+    }
 
     setLoading(true)
     setError(null)
 
-    const parsedAmount = parseFloat(amount.replace(',', '.'))
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setError('Veuillez saisir un montant supérieur à 0.')
+    const normalizedAmount = amount.trim().replace(',', '.')
+    const parsedAmount = Number(normalizedAmount)
+    if (!/^\d+(\.\d{1,2})?$/.test(normalizedAmount) || !Number.isFinite(parsedAmount) || parsedAmount <= 0 || parsedAmount > 99999999.99) {
+      setError('Saisissez un montant entre 0,01 et 99 999 999,99 €, avec deux décimales maximum.')
       setLoading(false)
       return
     }
 
     try {
-      const { error: insertError } = await supabase.from('expenses').insert({
-        household_id: household.id,
+      const values = {
         amount: parsedAmount,
         paid_by: paidBy,
         purchased_at: purchasedAt,
         description: description.trim() || 'Courses',
-      })
+      }
+      const { error: insertError } = expense
+        ? await supabase.from('expenses').update(values)
+            .eq('id', expense.id).eq('household_id', household.id).select('id').single()
+        : await supabase.from('expenses').insert({ ...values, household_id: household.id })
 
       if (insertError) {
         setError(insertError.message)
@@ -68,8 +80,8 @@ export function AddExpenseView({ onSuccess }: AddExpenseViewProps) {
           onSuccess()
         }, 900)
       }
-    } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue.')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue.')
     } finally {
       setLoading(false)
     }
@@ -79,11 +91,12 @@ export function AddExpenseView({ onSuccess }: AddExpenseViewProps) {
     <div className="space-y-4 tabbar-offset">
       {/* Header */}
       <div className="pt-1 pb-0.5">
+        {onCancel && <button type="button" onClick={onCancel} disabled={loading || success} className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#78716C] disabled:opacity-40"><ArrowLeft className="w-4 h-4" />Retour au budget</button>}
         <h1 className="text-2xl font-bold tracking-tight text-[#1C1917]">
-          Nouvelle dépense
+          {expense ? 'Modifier la dépense' : 'Nouvelle dépense'}
         </h1>
         <p className="text-sm text-[#78716C] mt-0.5">
-          Enregistrer un ticket ou un achat courses pour le foyer
+          {expense ? 'Corrigez les informations de cet achat.' : 'Enregistrer un ticket ou un achat courses pour le foyer'}
         </p>
       </div>
 
@@ -93,7 +106,7 @@ export function AddExpenseView({ onSuccess }: AddExpenseViewProps) {
             <Check className="w-8 h-8 stroke-[3]" />
           </div>
           <h2 className="text-lg font-bold text-[#1C1917]">
-            Dépense enregistrée !
+            {expense ? 'Dépense modifiée !' : 'Dépense enregistrée !'}
           </h2>
           <p className="text-sm text-[#78716C]">
             Le total et la répartition du foyer ont été mis à jour.
@@ -116,7 +129,7 @@ export function AddExpenseView({ onSuccess }: AddExpenseViewProps) {
               <input
                 type="text"
                 inputMode="decimal"
-                autoFocus
+                aria-label="Montant payé en euros"
                 required
                 placeholder="0"
                 value={amount}
@@ -144,6 +157,7 @@ export function AddExpenseView({ onSuccess }: AddExpenseViewProps) {
                   <button
                     key={m.user_id}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => setPaidBy(m.user_id)}
                     className={`py-3 px-3.5 rounded-2xl border text-sm font-semibold transition flex items-center justify-between ${
                       isSelected
@@ -170,6 +184,7 @@ export function AddExpenseView({ onSuccess }: AddExpenseViewProps) {
                   </button>
                 )
               })}
+              {!members.some((m) => m.user_id === paidBy) && paidBy && <div className="rounded-2xl border border-[#E7E5E4] p-3 text-sm">Ancien membre (payeur actuel)</div>}
             </div>
           </div>
 
@@ -184,10 +199,11 @@ export function AddExpenseView({ onSuccess }: AddExpenseViewProps) {
                 <Store className="w-5 h-5 text-[#A8A29E] shrink-0" />
                 <input
                   type="text"
-                  placeholder="Enseigne ou magasin (ex: Lidl, Grand Frais...)"
+                  aria-label="Enseigne ou magasin"
+                  placeholder="Enseigne ou magasin"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="flex-1 bg-transparent text-[15px] text-[#1C1917] placeholder-[#A8A29E] focus:outline-none"
+                  className="min-w-0 flex-1 bg-transparent text-base text-[#1C1917] placeholder-[#A8A29E] focus:outline-none"
                 />
               </div>
 
@@ -199,6 +215,7 @@ export function AddExpenseView({ onSuccess }: AddExpenseViewProps) {
                 </div>
                 <input
                   type="date"
+                  aria-label="Date d’achat"
                   required
                   value={purchasedAt}
                   onChange={(e) => setPurchasedAt(e.target.value)}
@@ -232,7 +249,7 @@ export function AddExpenseView({ onSuccess }: AddExpenseViewProps) {
           <div className="pt-2">
             <button
               type="submit"
-              disabled={loading || !amount}
+              disabled={loading || success || !amount}
               className="w-full h-12 rounded-2xl font-bold text-white bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] transition disabled:opacity-30 flex items-center justify-center gap-2"
             >
               {loading ? (
@@ -240,7 +257,7 @@ export function AddExpenseView({ onSuccess }: AddExpenseViewProps) {
               ) : (
                 <>
                   <CreditCard className="w-4 h-4 stroke-[2.2]" />
-                  <span>Enregistrer la dépense</span>
+                  <span>{expense ? 'Enregistrer les modifications' : 'Enregistrer la dépense'}</span>
                 </>
               )}
             </button>

@@ -194,7 +194,7 @@ export function Header() {
             />
 
             {/* Sheet Profil */}
-            <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-lg z-10 space-y-5 animate-in slide-in-from-bottom duration-200">
+            <div className="mobile-sheet relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-lg z-10 space-y-5 animate-in slide-in-from-bottom duration-200">
               {/* Grabber */}
               <div className="w-9 h-1 rounded-full bg-[#D6D3D1] mx-auto -mt-2 mb-2 sm:hidden" />
 
@@ -339,7 +339,7 @@ export function Header() {
             />
 
             {/* Sheet Foyer */}
-            <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-lg z-10 space-y-5 animate-in slide-in-from-bottom duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="mobile-sheet relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-lg z-10 space-y-5 animate-in slide-in-from-bottom duration-200 max-h-[90vh] overflow-y-auto">
               {/* Grabber */}
               <div className="w-9 h-1 rounded-full bg-[#D6D3D1] mx-auto -mt-2 mb-2 sm:hidden" />
 
