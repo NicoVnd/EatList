@@ -26,6 +26,9 @@
   * Répartition individuelle par membre avec pourcentages et barres de participation.
   * Bilan annuel interactif avec graphique sur 12 mois, moyenne mensuelle, mois record et top enseignes.
 
+* ⛽ **Essence** : onglet dédié pour saisir les pleins et consulter leur budget mensuel et annuel, séparément des courses.
+  * Appliquer `supabase/migrations/20261104120000_expense_categories.sql` avant de déployer cette version. Les dépenses existantes restent dans les courses.
+
 * 👥 **Gestion sécurisée du foyer** :
   * Création ou adhésion par code d'invitation unique.
   * Étanchéité totale garantie par **PostgreSQL Row Level Security (RLS)** : aucune donnée n'est accessible hors du foyer.

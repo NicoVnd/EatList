@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Expense } from '@/types/app'
+import { Expense, ExpenseCategory } from '@/types/app'
 import { AddExpenseView } from '@/components/expenses/AddExpenseView'
 import { useHousehold } from '@/context/HouseholdContext'
 import {
@@ -53,7 +53,9 @@ const MONTH_SHORT_FR = [
   'Déc',
 ]
 
-export function BudgetView() {
+export function BudgetView({ category = 'groceries', onAddExpense }: { category?: ExpenseCategory; onAddExpense?: () => void }) {
+  const isFuel = category === 'fuel'
+  const defaultDescription = isFuel ? 'Essence' : 'Courses'
   const { household, members } = useHousehold()
   const supabase = createClient()
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
@@ -126,6 +128,7 @@ export function BudgetView() {
         .from('expenses')
         .select('*')
         .eq('household_id', household.id)
+        .eq('category', category)
         .gte('purchased_at', startDate)
         .lte('purchased_at', endDate)
         .order('purchased_at', { ascending: false })
@@ -138,7 +141,7 @@ export function BudgetView() {
     } finally {
       setMonthlyLoading(false)
     }
-  }, [household, currentDate, supabase])
+  }, [household, currentDate, supabase, category])
 
   useEffect(() => {
     fetchMonthlyExpenses()
@@ -179,7 +182,7 @@ export function BudgetView() {
     const storeMap = new Map<string, { total: number; count: number }>()
     monthlyExpenses.forEach((exp) => {
       const amount = Number(exp.amount)
-      const raw = (exp.description || 'Courses').trim()
+      const raw = (exp.description || defaultDescription).trim()
       const name = raw.charAt(0).toUpperCase() + raw.slice(1)
       const curr = storeMap.get(name) || { total: 0, count: 0 }
       storeMap.set(name, { total: curr.total + amount, count: curr.count + 1 })
@@ -188,7 +191,7 @@ export function BudgetView() {
       .map(([name, data]) => ({ name, ...data }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 3)
-  }, [monthlyExpenses])
+  }, [monthlyExpenses, defaultDescription])
 
   // Moyenne panier du mois
   const averageMonthlyExpense =
@@ -217,6 +220,7 @@ export function BudgetView() {
         .from('expenses')
         .select('*')
         .eq('household_id', household.id)
+        .eq('category', category)
         .gte('purchased_at', startDate)
         .lte('purchased_at', endDate)
         .order('purchased_at', { ascending: false })
@@ -229,7 +233,7 @@ export function BudgetView() {
     } finally {
       setAnnualLoading(false)
     }
-  }, [household, selectedYear, supabase])
+  }, [household, selectedYear, supabase, category])
 
   useEffect(() => {
     if (budgetMode === 'year') {
@@ -265,7 +269,7 @@ export function BudgetView() {
 
       memberTotals[exp.paid_by] = (memberTotals[exp.paid_by] || 0) + amount
 
-      const rawStore = (exp.description || 'Courses').trim()
+      const rawStore = (exp.description || defaultDescription).trim()
       const storeName = rawStore.charAt(0).toUpperCase() + rawStore.slice(1)
       const currStore = storeMap.get(storeName) || { total: 0, count: 0 }
       storeMap.set(storeName, {
@@ -308,7 +312,7 @@ export function BudgetView() {
       memberTotals,
       topStores,
     }
-  }, [annualExpenses, members, selectedYear])
+  }, [annualExpenses, members, selectedYear, defaultDescription])
 
   const jumpToMonth = (monthIndex: number) => {
     setCurrentDate(new Date(selectedYear, monthIndex, 1))
@@ -331,11 +335,11 @@ export function BudgetView() {
       <div className="pt-1 pb-0.5 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-[#1C1917]">
-            Budget
+            {isFuel ? 'Essence' : 'Budget courses'}
           </h1>
           <p className="text-sm text-[#78716C] mt-0.5">
             {budgetMode === 'month'
-              ? 'Dépenses & équilibre du foyer'
+              ? isFuel ? 'Dépenses d’essence & répartition' : 'Dépenses courses & équilibre du foyer'
               : `Bilan & statistiques de l'année ${selectedYear}`}
           </p>
         </div>
@@ -383,6 +387,12 @@ export function BudgetView() {
           </div>
         )}
       </div>
+
+      {onAddExpense && (
+        <button type="button" onClick={onAddExpense} className="w-full rounded-2xl bg-[#F97316] px-4 py-3 text-sm font-bold text-white hover:bg-[#EA580C]">
+          Ajouter une dépense d’essence
+        </button>
+      )}
 
       {/* Segmented Control : Mois vs Année */}
       <div className="grid grid-cols-2 p-1 bg-[#F5F5F4] border border-[#E7E5E4] rounded-2xl">
@@ -433,7 +443,7 @@ export function BudgetView() {
             {/* Micro métriques */}
             <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[#F5F5F4]">
               <div>
-                <div className="text-[11px] text-[#A8A29E]">Panier moyen</div>
+                <div className="text-[11px] text-[#A8A29E]">{isFuel ? 'Plein moyen' : 'Panier moyen'}</div>
                 <div className="text-sm font-bold text-[#1C1917]">
                   {formatEuro(averageMonthlyExpense)}
                 </div>
@@ -591,7 +601,7 @@ export function BudgetView() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="font-bold text-sm text-[#1C1917] leading-snug truncate">
-                            {expense.description || 'Courses'}
+                            {expense.description || defaultDescription}
                           </div>
                           <div className="text-xs text-[#78716C] mt-0.5 flex flex-wrap items-center gap-x-1.5">
                             <span>{dateFormatted}</span>
@@ -606,7 +616,7 @@ export function BudgetView() {
                           - {formatEuro(expense.amount)}
                         </span>
                         <button type="button" onClick={() => { setEditingExpense(expense); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-                          aria-label={`Modifier la dépense ${expense.description || 'Courses'}`}
+                          aria-label={`Modifier la dépense ${expense.description || defaultDescription}`}
                           className="w-11 h-11 rounded-full flex items-center justify-center text-[#F97316] active:bg-[#F97316]/10 transition">
                           <Pencil className="w-4 h-4" />
                         </button>
@@ -664,7 +674,7 @@ export function BudgetView() {
                   </div>
                   <div>
                     <div className="text-[11px] text-[#A8A29E] font-medium">
-                      Panier moyen
+                      {isFuel ? 'Plein moyen' : 'Panier moyen'}
                     </div>
                     <div className="text-base font-bold text-[#1C1917] mt-0.5">
                       {formatEuro(annualStats.averagePerExpense)}
@@ -874,7 +884,7 @@ export function BudgetView() {
                 <div className="bg-white rounded-2xl p-5 border border-[#E7E5E4] space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="text-[11px] font-bold uppercase tracking-wider text-[#A8A29E]">
-                      Lieux de courses fréquents
+                      {isFuel ? 'Stations fréquentes' : 'Lieux de courses fréquents'}
                     </div>
                     <ShoppingBag className="w-4 h-4 text-[#A8A29E]" />
                   </div>

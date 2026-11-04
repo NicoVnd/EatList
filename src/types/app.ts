@@ -31,7 +31,10 @@ export interface ShoppingItem {
   author?: UserProfile | null
 }
 
+export type ExpenseCategory = 'groceries' | 'fuel'
+
 export interface Expense {
+  category: ExpenseCategory
   id: string
   household_id: string
   amount: number

@@ -100,6 +100,7 @@ export interface Database {
       }
       expenses: {
         Row: {
+          category: 'groceries' | 'fuel'
           id: string
           household_id: string
           amount: number
@@ -109,6 +110,7 @@ export interface Database {
           created_at: string
         }
         Insert: {
+          category?: 'groceries' | 'fuel'
           id?: string
           household_id: string
           amount: number
@@ -118,6 +120,7 @@ export interface Database {
           created_at?: string
         }
         Update: {
+          category?: 'groceries' | 'fuel'
           id?: string
           household_id?: string
           amount?: number

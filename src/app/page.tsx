@@ -22,6 +22,7 @@ export default function HomePage() {
 
   // Onglet principal par défaut : Menus de la semaine
   const [currentTab, setCurrentTab] = useState<TabType>('meals')
+  const [addingFuel, setAddingFuel] = useState(false)
   const [shoppingCount, setShoppingCount] = useState<number>(0)
 
   // Écouteur en direct du nombre d'articles de courses à acheter pour le badge du BottomNav
@@ -101,13 +102,18 @@ export default function HomePage() {
         {currentTab === 'expense' && (
           <AddExpenseView onSuccess={() => setCurrentTab('budget')} />
         )}
-        {currentTab === 'budget' && <BudgetView />}
+        {currentTab === 'budget' && <BudgetView key="groceries" />}
+        {currentTab === 'fuel' && (addingFuel ? (
+          <AddExpenseView key="fuel" category="fuel" onCancel={() => setAddingFuel(false)} onSuccess={() => setAddingFuel(false)} />
+        ) : (
+          <BudgetView key="fuel" category="fuel" onAddExpense={() => setAddingFuel(true)} />
+        ))}
       </main>
 
       {/* Barre de navigation */}
       <BottomNav
         currentTab={currentTab}
-        onTabChange={(tab) => setCurrentTab(tab)}
+        onTabChange={(tab) => { setAddingFuel(false); setCurrentTab(tab) }}
         shoppingItemsCount={shoppingCount}
       />
     </div>

@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useHousehold } from '@/context/HouseholdContext'
 import { useAuth } from '@/context/AuthContext'
-import type { Expense } from '@/types/app'
+import type { Expense, ExpenseCategory } from '@/types/app'
 import {
   Check,
   Loader2,
@@ -16,13 +16,18 @@ import {
 
 interface AddExpenseViewProps {
   onSuccess: () => void
+  category?: ExpenseCategory
   expense?: Expense
   onCancel?: () => void
 }
 
 const quickStores = ['Intermarché', 'Grand Frais', 'Auchan', 'Lidl', 'Action']
 
-export function AddExpenseView({ onSuccess, expense, onCancel }: AddExpenseViewProps) {
+export function AddExpenseView({ onSuccess, expense, onCancel, category = 'groceries' }: AddExpenseViewProps) {
+  const expenseCategory = expense?.category ?? category
+  const isFuel = expenseCategory === 'fuel'
+  const defaultDescription = isFuel ? 'Essence' : 'Courses'
+  const stores = isFuel ? ['TotalEnergies', 'Esso', 'Shell', 'Intermarché', 'E.Leclerc'] : quickStores
   const { household, members } = useHousehold()
   const { user } = useAuth()
   const supabase = createClient()
@@ -59,10 +64,11 @@ export function AddExpenseView({ onSuccess, expense, onCancel }: AddExpenseViewP
 
     try {
       const values = {
+        category: expenseCategory,
         amount: parsedAmount,
         paid_by: paidBy,
         purchased_at: purchasedAt,
-        description: description.trim() || 'Courses',
+        description: description.trim() || defaultDescription,
       }
       const { error: insertError } = expense
         ? await supabase.from('expenses').update(values)
@@ -93,10 +99,10 @@ export function AddExpenseView({ onSuccess, expense, onCancel }: AddExpenseViewP
       <div className="pt-1 pb-0.5">
         {onCancel && <button type="button" onClick={onCancel} disabled={loading || success} className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#78716C] disabled:opacity-40"><ArrowLeft className="w-4 h-4" />Retour au budget</button>}
         <h1 className="text-2xl font-bold tracking-tight text-[#1C1917]">
-          {expense ? 'Modifier la dépense' : 'Nouvelle dépense'}
+          {expense ? 'Modifier la dépense' : isFuel ? 'Dépense d’essence' : 'Nouvelle dépense'}
         </h1>
         <p className="text-sm text-[#78716C] mt-0.5">
-          {expense ? 'Corrigez les informations de cet achat.' : 'Enregistrer un ticket ou un achat courses pour le foyer'}
+          {expense ? 'Corrigez les informations de cet achat.' : isFuel ? 'Enregistrer un plein, séparément des courses.' : 'Enregistrer un ticket ou un achat courses pour le foyer'}
         </p>
       </div>
 
@@ -199,8 +205,8 @@ export function AddExpenseView({ onSuccess, expense, onCancel }: AddExpenseViewP
                 <Store className="w-5 h-5 text-[#A8A29E] shrink-0" />
                 <input
                   type="text"
-                  aria-label="Enseigne ou magasin"
-                  placeholder="Enseigne ou magasin"
+                  aria-label={isFuel ? 'Station-service' : 'Enseigne ou magasin'}
+                  placeholder={isFuel ? 'Station-service' : 'Enseigne ou magasin'}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="min-w-0 flex-1 bg-transparent text-base text-[#1C1917] placeholder-[#A8A29E] focus:outline-none"
@@ -227,7 +233,7 @@ export function AddExpenseView({ onSuccess, expense, onCancel }: AddExpenseViewP
             {/* Suggestions d'enseignes fréquentes */}
             <div className="pt-1">
               <div className="flex flex-wrap gap-1.5 px-0.5">
-                {quickStores.map((store) => (
+                {stores.map((store) => (
                   <button
                     key={store}
                     type="button"

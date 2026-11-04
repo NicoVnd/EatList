@@ -185,6 +185,7 @@ const KEYWORDS_TO_CATEGORY: Record<string, string> = {
   'sucre': 'pantry',
   'sel': 'pantry',
   'poivre': 'pantry',
+  'curry': 'pantry',
   'epice': 'pantry',
   'épice': 'pantry',
   'épices': 'pantry',
@@ -284,28 +285,58 @@ const KEYWORDS_TO_CATEGORY: Record<string, string> = {
   'lave-vaisselle': 'home',
 }
 
-// Fonction de détection automatique Bring!
+// Normalize both labels and rules, including ligatures and apostrophes.
+function normalizeGroceryName(value: string): string {
+  return value.toLowerCase().replace(/œ/g, 'oe').replace(/æ/g, 'ae')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ').trim()
+}
+
+const SPECIFIC_KEYWORDS: Record<string, string> = {
+  'jus de fruits': 'drinks', 'jus de pomme': 'drinks', 'jus d orange': 'drinks',
+  'lait d amande': 'drinks', 'lait d amandes': 'drinks', 'lait d avoine': 'drinks',
+  'lait de coco': 'pantry', 'creme de coco': 'pantry',
+  'sauce tomate': 'pantry', 'sauce tomates': 'pantry', 'sauce au fromage': 'pantry',
+  'sauce soja': 'pantry', 'puree de tomates': 'pantry', 'tomates pelees': 'pantry',
+  'tomates en conserve': 'pantry', 'haricots rouges': 'pantry', 'haricots blancs': 'pantry',
+  'beurre de cacahuete': 'pantry', 'beurre de cacahuetes': 'pantry',
+  'confiture de fraises': 'pantry', 'confiture de fraise': 'pantry',
+  'pain a l ail': 'bakery', 'pain au lait': 'bakery',
+  'creme fraiche': 'dairy', 'creme liquide': 'dairy', 'fromage blanc': 'dairy',
+  'creme solaire': 'home', 'creme pour les mains': 'home', 'coton': 'home',
+  'deodorant': 'home', 'mouchoirs': 'home', 'sacs poubelles': 'home',
+  'liquide vaisselle': 'home', 'liquide vaiselle': 'home', 'vaiselle': 'home',
+  'sel regenerant': 'home',
+  'glace vanille': 'frozen', 'creme glacee': 'frozen',
+  'salade de riz': 'dairy', 'salade de pates': 'dairy',
+  'haricots verts': 'produce', 'petits pois': 'produce', 'patate douce': 'produce',
+  'pommes de terre': 'produce', 'chou fleur': 'produce',
+  'abricot': 'produce', 'abricots': 'produce', 'clementine': 'produce', 'clementines': 'produce',
+  'peche': 'produce', 'peches': 'produce', 'betterave': 'produce', 'betteraves': 'produce',
+  'brocolis': 'produce', 'epinards': 'produce',
+  'surgeles': 'frozen', 'surgelee': 'frozen', 'surgelees': 'frozen',
+  'poissons panes': 'frozen', 'batonnets de poisson': 'frozen',
+}
+
+const CATEGORY_RULES = Object.entries({ ...KEYWORDS_TO_CATEGORY, ...SPECIFIC_KEYWORDS })
+  .map(([keyword, category]) => ({ keyword: normalizeGroceryName(keyword), category }))
+
 export function detectGroceryCategory(itemName: string): GroceryCategory {
-  if (!itemName) return GROCERY_CATEGORIES.find((c) => c.id === 'other')!
+  const clean = normalizeGroceryName(itemName)
+  const matches = CATEGORY_RULES.filter(({ keyword }) =>
+    (` ${clean} `).includes(` ${keyword} `)
+  )
 
-  const clean = itemName
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-
-  for (const [kw, catId] of Object.entries(KEYWORDS_TO_CATEGORY)) {
-    const cleanKw = kw
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-    if (clean === cleanKw || clean.includes(cleanKw) || cleanKw.includes(clean)) {
-      const found = GROCERY_CATEGORIES.find((c) => c.id === catId)
-      if (found) return found
-    }
-  }
-
-  return GROCERY_CATEGORIES.find((c) => c.id === 'other')!
+  // Explicit storage/hygiene terms take precedence over food ingredients.
+  matches.sort((a, b) => {
+    const priority = (rule: typeof a) => rule.category === 'home' ? 2 : rule.category === 'frozen' ? 1 : 0
+    return priority(b) - priority(a)
+      || b.keyword.split(' ').length - a.keyword.split(' ').length
+      || clean.indexOf(a.keyword) - clean.indexOf(b.keyword)
+      || b.keyword.length - a.keyword.length
+  })
+  return GROCERY_CATEGORIES.find((category) => category.id === matches[0]?.category)
+    ?? GROCERY_CATEGORIES.find((category) => category.id === 'other')!
 }
 
 // Articles populaires Bring! suggérés en 1 clic

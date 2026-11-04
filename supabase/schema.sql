@@ -38,11 +38,12 @@ CREATE TABLE IF NOT EXISTS public.shopping_items (
   updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- 5. Dépenses de courses
+-- 5. Dépenses du foyer
 CREATE TABLE IF NOT EXISTS public.expenses (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   household_id UUID REFERENCES public.households(id) ON DELETE CASCADE NOT NULL,
   amount NUMERIC(10, 2) NOT NULL,
+  category TEXT NOT NULL DEFAULT 'groceries' CHECK (category IN ('groceries', 'fuel')),
   paid_by UUID REFERENCES public.users(id) ON DELETE SET NULL NOT NULL,
   description TEXT,
   purchased_at DATE NOT NULL DEFAULT CURRENT_DATE,
