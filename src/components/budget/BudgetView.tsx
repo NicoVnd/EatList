@@ -390,7 +390,7 @@ export function BudgetView({ category = 'groceries', onAddExpense }: { category?
 
       {onAddExpense && (
         <button type="button" onClick={onAddExpense} className="w-full rounded-2xl bg-[#F97316] px-4 py-3 text-sm font-bold text-white hover:bg-[#EA580C]">
-          Ajouter une dépense d’essence
+          {isFuel ? 'Ajouter une dépense d’essence' : 'Ajouter une dépense de courses'}
         </button>
       )}
 

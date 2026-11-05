@@ -97,9 +97,9 @@ export function AddExpenseView({ onSuccess, expense, onCancel, category = 'groce
     <div className="space-y-4 tabbar-offset">
       {/* Header */}
       <div className="pt-1 pb-0.5">
-        {onCancel && <button type="button" onClick={onCancel} disabled={loading || success} className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#78716C] disabled:opacity-40"><ArrowLeft className="w-4 h-4" />Retour au budget</button>}
+        {onCancel && <button type="button" onClick={onCancel} disabled={loading || success} className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#78716C] disabled:opacity-40"><ArrowLeft className="w-4 h-4" />{isFuel ? 'Retour à l’essence' : 'Retour au budget courses'}</button>}
         <h1 className="text-2xl font-bold tracking-tight text-[#1C1917]">
-          {expense ? 'Modifier la dépense' : isFuel ? 'Dépense d’essence' : 'Nouvelle dépense'}
+          {expense ? 'Modifier la dépense' : isFuel ? 'Dépense d’essence' : 'Dépense de courses'}
         </h1>
         <p className="text-sm text-[#78716C] mt-0.5">
           {expense ? 'Corrigez les informations de cet achat.' : isFuel ? 'Enregistrer un plein, séparément des courses.' : 'Enregistrer un ticket ou un achat courses pour le foyer'}

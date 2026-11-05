@@ -1,9 +1,9 @@
 'use client'
 
 import React from 'react'
-import { Utensils, ShoppingBag, PlusCircle, PieChart, Fuel } from 'lucide-react'
+import { Utensils, ShoppingBag, PieChart, Fuel } from 'lucide-react'
 
-export type TabType = 'meals' | 'shopping' | 'expense' | 'budget' | 'fuel'
+export type TabType = 'meals' | 'shopping' | 'budget' | 'fuel'
 
 interface BottomNavProps {
   currentTab: TabType
@@ -31,19 +31,14 @@ export function BottomNav({
     },
     {
       id: 'shopping',
-      label: 'Courses',
+      label: 'Liste courses',
       icon: ShoppingBag,
       badgeCount: shoppingItemsCount,
-    },
-    {
-      id: 'expense',
-      label: 'Dépense',
-      icon: PlusCircle,
     },
     { id: 'fuel', label: 'Essence', icon: Fuel },
     {
       id: 'budget',
-      label: 'Budget',
+      label: 'Budget courses',
       icon: PieChart,
     },
   ]

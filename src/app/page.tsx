@@ -22,7 +22,7 @@ export default function HomePage() {
 
   // Onglet principal par défaut : Menus de la semaine
   const [currentTab, setCurrentTab] = useState<TabType>('meals')
-  const [addingFuel, setAddingFuel] = useState(false)
+  const [addingExpense, setAddingExpense] = useState(false)
   const [shoppingCount, setShoppingCount] = useState<number>(0)
 
   // Écouteur en direct du nombre d'articles de courses à acheter pour le badge du BottomNav
@@ -99,21 +99,22 @@ export default function HomePage() {
       <main className="flex-1 max-w-md w-full mx-auto px-4 pt-2">
         {currentTab === 'meals' && <MealsView />}
         {currentTab === 'shopping' && <ShoppingView />}
-        {currentTab === 'expense' && (
-          <AddExpenseView onSuccess={() => setCurrentTab('budget')} />
-        )}
-        {currentTab === 'budget' && <BudgetView key="groceries" />}
-        {currentTab === 'fuel' && (addingFuel ? (
-          <AddExpenseView key="fuel" category="fuel" onCancel={() => setAddingFuel(false)} onSuccess={() => setAddingFuel(false)} />
+        {currentTab === 'budget' && (addingExpense ? (
+          <AddExpenseView key="groceries" category="groceries" onCancel={() => setAddingExpense(false)} onSuccess={() => setAddingExpense(false)} />
         ) : (
-          <BudgetView key="fuel" category="fuel" onAddExpense={() => setAddingFuel(true)} />
+          <BudgetView key="groceries" onAddExpense={() => setAddingExpense(true)} />
+        ))}
+        {currentTab === 'fuel' && (addingExpense ? (
+          <AddExpenseView key="fuel" category="fuel" onCancel={() => setAddingExpense(false)} onSuccess={() => setAddingExpense(false)} />
+        ) : (
+          <BudgetView key="fuel" category="fuel" onAddExpense={() => setAddingExpense(true)} />
         ))}
       </main>
 
       {/* Barre de navigation */}
       <BottomNav
         currentTab={currentTab}
-        onTabChange={(tab) => { setAddingFuel(false); setCurrentTab(tab) }}
+        onTabChange={(tab) => { setAddingExpense(false); setCurrentTab(tab) }}
         shoppingItemsCount={shoppingCount}
       />
     </div>
