@@ -35,12 +35,12 @@ export function BottomNav({
       icon: ShoppingBag,
       badgeCount: shoppingItemsCount,
     },
-    { id: 'fuel', label: 'Essence', icon: Fuel },
     {
       id: 'budget',
       label: 'Budget courses',
       icon: PieChart,
     },
+    { id: 'fuel', label: 'Essence', icon: Fuel },
   ]
 
   return (
