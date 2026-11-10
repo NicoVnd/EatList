@@ -6,7 +6,7 @@ import { Recipe } from '@/types/app'
 import { useHousehold } from '@/context/HouseholdContext'
 import { useAuth } from '@/context/AuthContext'
 import {
-  BookOpen,
+  Pencil,
   Plus,
   Search,
   Clock,
@@ -54,6 +54,8 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
 
   // Modale création recette
   const [isCreating, setIsCreating] = useState(false)
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null)
+  const [saveError, setSaveError] = useState('')
   const [newTitle, setNewTitle] = useState('')
   const [newCategory, setNewCategory] = useState('Plat')
   const [newPrepTime, setNewPrepTime] = useState('')
@@ -71,6 +73,35 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
   const [activeRecipe, setActiveRecipe] = useState<Recipe | null>(null)
   const [isChangingCategory, setIsChangingCategory] = useState(false)
   const [ingredientsToast, setIngredientsToast] = useState(false)
+
+  const openRecipeForm = (recipe: Recipe | null = null, category = 'Plat') => {
+    setEditingRecipe(recipe)
+    setNewTitle(recipe?.title ?? '')
+    setNewCategory(recipe?.category || category)
+    setNewPrepTime(recipe?.prep_time ?? '')
+    setNewCookTime(recipe?.cook_time ?? '')
+    setNewServings(String(recipe?.servings ?? 4))
+    setNewIngredients(Array.isArray(recipe?.ingredients) ? recipe.ingredients.join('\n') : recipe?.ingredients ?? '')
+    setNewInstructions(recipe?.instructions ?? '')
+    setNewCategoryNameInput('')
+    setIsAddingCategoryInline(false)
+    setSaveError('')
+    setActiveRecipe(null)
+    setIsCreating(true)
+  }
+
+  const closeRecipeForm = () => {
+    if (isSubmitting) return
+    setIsCreating(false)
+    if (editingRecipe) setActiveRecipe(editingRecipe)
+  }
+
+  useEffect(() => {
+    if (!isCreating && !activeRecipe && !isCreatingCategoryModal) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = previousOverflow }
+  }, [isCreating, activeRecipe, isCreatingCategoryModal])
 
   // Charger les catégories personnalisées depuis le localStorage
   useEffect(() => {
@@ -204,8 +235,7 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
     setQuickCatInput('')
     setIsCreatingCategoryModal(false)
 
-    setNewCategory(formatted)
-    setIsCreating(true)
+    openRecipeForm(null, formatted)
   }
 
   // Ajout d'une catégorie inline dans le formulaire de recette
@@ -222,7 +252,9 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
     e.preventDefault()
     if (!newTitle.trim() || !household || !user) return
 
+    if (isSubmitting) return
     setIsSubmitting(true)
+    setSaveError('')
 
     const ingArray = newIngredients
       .split('\n')
@@ -233,34 +265,30 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
     persistCustomCategory(finalCategory)
 
     try {
-      const { data, error } = await supabase
-        .from('recipes')
-        .insert({
-          household_id: household.id,
-          title: newTitle.trim(),
-          category: finalCategory,
-          prep_time: newPrepTime.trim() || null,
-          cook_time: newCookTime.trim() || null,
-          servings: parseInt(newServings) || 4,
-          ingredients: ingArray,
-          instructions: newInstructions.trim() || null,
-          created_by: user.id,
-        })
-        .select()
-        .single()
-
-      if (!error && data) {
-        setRecipes((prev) => [data as Recipe, ...prev])
-        setNewTitle('')
-        setNewPrepTime('')
-        setNewCookTime('')
-        setNewIngredients('')
-        setNewInstructions('')
-        setIsCreating(false)
-        setIsAddingCategoryInline(false)
+      const payload = {
+        title: newTitle.trim(), category: finalCategory,
+        prep_time: newPrepTime.trim() || null, cook_time: newCookTime.trim() || null,
+        servings: Number(newServings), ingredients: ingArray,
+        instructions: newInstructions.trim() || null,
       }
+      const query = editingRecipe
+        ? supabase.from('recipes').update({ ...payload, updated_at: new Date().toISOString() })
+            .eq('id', editingRecipe.id).eq('household_id', household.id)
+        : supabase.from('recipes').insert({ ...payload, household_id: household.id, created_by: user.id })
+      const { data, error } = await query.select().single()
+      if (error) throw error
+      if (!data) throw new Error('Recette introuvable')
+      const savedRecipe = data as Recipe
+      setRecipes((prev) => editingRecipe
+        ? prev.map((recipe) => recipe.id === savedRecipe.id ? savedRecipe : recipe)
+        : [savedRecipe, ...prev.filter((recipe) => recipe.id !== savedRecipe.id)])
+      if (editingRecipe) setActiveRecipe(savedRecipe)
+      setIsCreating(false)
+      setEditingRecipe(null)
+      setIsAddingCategoryInline(false)
     } catch (err) {
-      console.error('Erreur ajout recette:', err)
+      console.error('Erreur sauvegarde recette:', err)
+      setSaveError('Impossible d’enregistrer la recette. Vos modifications sont conservées, réessayez.')
     } finally {
       setIsSubmitting(false)
     }
@@ -344,15 +372,15 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
   return (
     <div className="space-y-4">
       {/* Barre de recherche & boutons d'actions */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1 bg-white border border-stone-200 rounded-xl p-2 px-3 flex items-center gap-2 shadow-2xs">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="w-full min-w-0 sm:w-auto sm:flex-1 bg-white border border-stone-200 rounded-xl p-2 px-3 flex items-center gap-2 shadow-2xs">
           <Search className="w-4 h-4 text-[#78716C]" />
           <input
             type="text"
             placeholder="Rechercher une recette..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 bg-transparent text-sm text-[#1C1917] placeholder-stone-400 focus:outline-none"
+            className="min-w-0 w-full flex-1 bg-transparent text-sm text-[#1C1917] placeholder-stone-400 focus:outline-none"
           />
           {searchQuery && (
             <button
@@ -371,14 +399,13 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
           className="h-10 px-3 rounded-xl bg-white border border-stone-200 text-[#1C1917] hover:border-orange-300 text-xs font-semibold flex items-center gap-1.5 shadow-2xs active:bg-stone-50 transition shrink-0"
         >
           <FolderPlus className="w-4 h-4 text-[#F97316]" />
-          <span className="hidden xs:inline">Catégorie</span>
+          <span className="inline">Catégorie</span>
         </button>
 
         {/* Bouton Nouvelle Recette */}
         <button
           onClick={() => {
-            setIsAddingCategoryInline(false)
-            setIsCreating(true)
+            openRecipeForm()
           }}
           className="h-10 px-3.5 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs active:scale-95 transition shrink-0"
         >
@@ -403,7 +430,7 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
           >
             <span>Tous</span>
             <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+              className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                 selectedCategory === 'Tous'
                   ? 'bg-white/20 text-white'
                   : 'bg-stone-100 text-[#78716C]'
@@ -430,7 +457,7 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
               >
                 <span>{cat}</span>
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                     isSelected
                       ? 'bg-white/25 text-white'
                       : 'bg-stone-100 text-[#78716C]'
@@ -471,7 +498,7 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
 
           {!searchQuery && recipes.length === 0 && (
             <button
-              onClick={() => setIsCreating(true)}
+              onClick={() => openRecipeForm()}
               className="mt-4 px-4 py-2 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -491,6 +518,15 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
             return (
               <div
                 key={recipe.id}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    setActiveRecipe(recipe)
+                    setIsChangingCategory(false)
+                  }
+                }}
                 onClick={() => {
                   setActiveRecipe(recipe)
                   setIsChangingCategory(false)
@@ -498,18 +534,18 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
                 className="bg-white rounded-2xl border border-stone-200 p-3.5 shadow-xs hover:border-orange-300 active:scale-[0.99] transition cursor-pointer flex items-center justify-between gap-3"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-bold text-[#1C1917] truncate">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="text-sm font-bold text-[#1C1917] break-words w-full">
                       {recipe.title}
                     </span>
                     {recipe.category && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-[#F97316] border border-orange-100 shrink-0">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-[#F97316] border border-orange-100 max-w-full break-words">
                         {recipe.category}
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs text-[#78716C]">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#78716C]">
                     {(recipe.prep_time || recipe.cook_time) && (
                       <span className="flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5" />
@@ -614,22 +650,22 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div
             className="fixed inset-0 bg-stone-900/40 backdrop-blur-xs"
-            onClick={() => setIsCreating(false)}
+            onClick={closeRecipeForm}
           />
-          <div className="mobile-sheet relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl z-10 space-y-4 max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+          <div className="mobile-sheet relative w-full max-w-md break-words bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl z-10 space-y-4 max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
             <div className="w-9 h-1 rounded-full bg-stone-300 mx-auto -mt-2 mb-2 sm:hidden" />
 
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-[#1C1917]">
-                  Nouvelle recette
+                  {editingRecipe ? 'Modifier la recette' : 'Nouvelle recette'}
                 </h3>
                 <p className="text-xs text-[#78716C]">
                   Enregistrez la recette pour tout le foyer
                 </p>
               </div>
               <button
-                onClick={() => setIsCreating(false)}
+                onClick={closeRecipeForm}
                 className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-[#78716C] hover:text-[#1C1917]"
               >
                 <X className="w-4 h-4" />
@@ -637,6 +673,8 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
             </div>
 
             <form onSubmit={handleCreateRecipe} className="space-y-4">
+              {saveError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{saveError}</p>}
+              <fieldset disabled={isSubmitting} className="space-y-4 min-w-0">
               {/* Titre */}
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#78716C] mb-1.5">
@@ -686,7 +724,7 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
                           handleAddInlineCategory()
                         }
                       }}
-                      className="flex-1 px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-xs font-semibold text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#F97316]"
+                      className="min-w-0 flex-1 px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-xs font-semibold text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#F97316]"
                     />
                     <button
                       type="button"
@@ -739,6 +777,7 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
                   </label>
                   <input
                     type="number"
+                    required
                     min="1"
                     max="20"
                     placeholder="4"
@@ -809,9 +848,10 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
                 {isSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                 ) : (
-                  'Enregistrer la recette'
+                  editingRecipe ? 'Enregistrer les modifications' : 'Enregistrer la recette'
                 )}
               </button>
+            </fieldset>
             </form>
           </div>
         </div>
@@ -826,13 +866,13 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
             className="fixed inset-0 bg-stone-900/40 backdrop-blur-xs"
             onClick={() => setActiveRecipe(null)}
           />
-          <div className="mobile-sheet relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl z-10 space-y-5 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+          <div className="mobile-sheet relative w-full max-w-md break-words bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl z-10 space-y-5 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
             <div className="w-9 h-1 rounded-full bg-stone-300 mx-auto -mt-2 mb-2 sm:hidden" />
 
             <div className="flex items-start justify-between gap-3">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0 break-words">
                 {/* Catégorie avec possibilité de changer */}
-                <div className="flex items-center gap-2 mb-1.5">
+                <div className="flex flex-wrap items-center gap-2 mb-1.5">
                   {isChangingCategory ? (
                     <div className="flex flex-wrap gap-1 items-center p-1 bg-stone-50 border border-stone-200 rounded-xl max-h-24 overflow-y-auto">
                       {availableCategoriesForCreation.map((cat) => (
@@ -930,7 +970,7 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
                   {(Array.isArray(activeRecipe.ingredients)
                     ? activeRecipe.ingredients
                     : [activeRecipe.ingredients]
-                  ).map((ing: any, i: number) => (
+                  ).map((ing, i: number) => (
                     <div key={i} className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#F97316] shrink-0" />
                       <span>{String(ing)}</span>
@@ -952,6 +992,11 @@ export function RecipesView({ onPlanRecipe }: RecipesViewProps) {
               </div>
             )}
 
+            <button type="button" onClick={() => openRecipeForm(activeRecipe)}
+              className="w-full py-3 rounded-xl border border-orange-200 bg-orange-50 text-[#EA580C] text-sm font-semibold flex items-center justify-center gap-2">
+              <Pencil className="w-4 h-4" />
+              Modifier la recette
+            </button>
             {/* Actions : Planifier ou Supprimer */}
             <div className="pt-2 flex items-center gap-2 border-t border-stone-200">
               {onPlanRecipe && (
